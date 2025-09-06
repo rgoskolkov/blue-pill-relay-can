@@ -1,0 +1,12 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.intelliSenseMode": "gcc-arm",
+    "files.associations": {
+        "*.c": "c",
+        "*.h": "c"
+    },
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "cmake.configureOnOpen": true
+}
