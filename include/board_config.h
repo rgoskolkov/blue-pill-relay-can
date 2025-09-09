@@ -9,7 +9,25 @@
 
   Этот файл не пытается подменять пины — если main.h отсутствует или
   не содержит перечисленных символов, сборка упадёт с ошибкой.
+  
+  Modbus UART configuration (человеческие значения):
+   MODBUS_UART_PORT      : 1 or 2 (UART1 / UART2)
+   MODBUS_UART_STOPBITS  : 1 or 2
+   MODBUS_UART_PARITY    : 0 = none, 1 = odd, 2 = even
+
+   Можно переопределить через build_flags (-D...) в platformio.ini
 */
+#ifndef MODBUS_UART_PORT
+#define MODBUS_UART_PORT 1
+#endif
+
+#ifndef MODBUS_UART_STOPBITS
+#define MODBUS_UART_STOPBITS 1
+#endif
+
+#ifndef MODBUS_UART_PARITY
+#define MODBUS_UART_PARITY 2  /* по умолчанию EVEN */
+#endif
 
 #ifndef BOARD_CONFIG_H
 #define BOARD_CONFIG_H
@@ -28,6 +46,12 @@
 
 #ifndef MODBUS_SLAVE_ID
 #define MODBUS_SLAVE_ID 1U
+#endif
+
+/* MODBUS_UART_PARITY: 0 = NONE, 1 = ODD, 2 = EVEN
+   По умолчанию — NONE*/
+#ifndef MODBUS_UART_PARITY
+#define MODBUS_UART_PARITY 0
 #endif
 
 /* DEBOUNCE_MS — интервал дебаунса для механических переключателей в миллисекундах.

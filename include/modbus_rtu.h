@@ -1,9 +1,9 @@
-#ifndef MODBUS_RTU_H
-#define MODBUS_RTU_H
+// #ifndef MODBUS_RTU_H
+// #define MODBUS_RTU_H
 
-#include <stdint.h>
+// #include <stdint.h>
 
-void Modbus_Init(void);
-void Modbus_Task(void);
+// void Modbus_Init(void);
+// void Modbus_Task(void);
 
-#endif // MODBUS_RTU_H
+// #endif // MODBUS_RTU_H

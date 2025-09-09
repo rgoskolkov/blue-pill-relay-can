@@ -42,8 +42,16 @@ void MX_USART1_UART_Init(void)
   huart1.Instance = USART1;
   huart1.Init.BaudRate = MODBUS_BAUDRATE;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
+  /* Stop bits from board_config.h: 1 or 2 */
+  huart1.Init.StopBits = (MODBUS_UART_STOPBITS == 2) ? UART_STOPBITS_2 : UART_STOPBITS_1;
+  /* Parity mapping: 0 = none, 1 = odd, 2 = even */
+  #if (MODBUS_UART_PARITY == 1)
+    huart1.Init.Parity = UART_PARITY_ODD;
+  #elif (MODBUS_UART_PARITY == 2)
+    huart1.Init.Parity = UART_PARITY_EVEN;
+  #else
+    huart1.Init.Parity = UART_PARITY_NONE;
+  #endif
   huart1.Init.Mode = UART_MODE_TX_RX;
   huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
