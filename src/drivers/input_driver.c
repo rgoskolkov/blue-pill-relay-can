@@ -5,6 +5,7 @@
 #include "stm32f1xx_hal.h"
 #include <string.h>
 #include <stdbool.h>
+#include "led_driver.h"
 
 static uint8_t prev_states[NUM_SWITCHES];
 static uint32_t last_event_ts[NUM_SWITCHES];
@@ -49,6 +50,7 @@ void Input_Update(void) {
                 continue; // отбросить дребезг
             }
             prev_states[i] = cur;
+            Start_LED_Blink();
             modbus_map_update_switch(i, cur);
         }
     }

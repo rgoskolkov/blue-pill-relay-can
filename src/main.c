@@ -6,6 +6,7 @@
 #include "modbus_adapter.h"
 #include "relay_driver.h"
 #include "tim.h"
+#include "led_driver.h"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -28,6 +29,7 @@ int main(void)
     Input_Update();
     ModbusAdapter_Poll();
     HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    Process_LED_Blink();
     HAL_Delay(1);
   }
 }
