@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cmake",
+			"label": "CMake: настроить",
+			"command": "configure",
+			"problemMatcher": [],
+			"detail": "Задача шаблона CMake настроить"
+		},
+		{
+			"type": "cmake",
+			"label": "CMake: сборка",
+			"command": "build",
+			"targets": [
+				"[Нет данных — выберите комплект]"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "Задача шаблона CMake сборка"
+		}
+	]
+}

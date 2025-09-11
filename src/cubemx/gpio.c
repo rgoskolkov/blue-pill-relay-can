@@ -73,7 +73,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : RELAY1_Pin RELAY2_Pin RELAY3_Pin RELAY4_Pin
                            RELAY5_Pin RELAY6_Pin RELAY7_Pin RELAY8_Pin */
   GPIO_InitStruct.Pin = RELAY1_Pin | RELAY2_Pin | RELAY3_Pin | RELAY4_Pin | RELAY5_Pin | RELAY6_Pin | RELAY7_Pin | RELAY8_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

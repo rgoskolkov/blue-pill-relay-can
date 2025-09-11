@@ -9,7 +9,7 @@
 
   Этот файл не пытается подменять пины — если main.h отсутствует или
   не содержит перечисленных символов, сборка упадёт с ошибкой.
-  
+
   Modbus UART configuration (человеческие значения):
    MODBUS_UART_PORT      : 1 or 2 (UART1 / UART2)
    MODBUS_UART_STOPBITS  : 1 or 2
@@ -23,10 +23,6 @@
 
 #ifndef MODBUS_UART_STOPBITS
 #define MODBUS_UART_STOPBITS 1
-#endif
-
-#ifndef MODBUS_UART_PARITY
-#define MODBUS_UART_PARITY 2  /* по умолчанию EVEN */
 #endif
 
 #ifndef BOARD_CONFIG_H
@@ -68,39 +64,39 @@
 #endif
 
 /* Relay pins (берутся напрямую из main.h) */
-#define RELAY1_PIN  RELAY1_Pin
+#define RELAY1_PIN RELAY1_Pin
 #define RELAY1_PORT RELAY1_GPIO_Port
-#define RELAY2_PIN  RELAY2_Pin
+#define RELAY2_PIN RELAY2_Pin
 #define RELAY2_PORT RELAY2_GPIO_Port
-#define RELAY3_PIN  RELAY3_Pin
+#define RELAY3_PIN RELAY3_Pin
 #define RELAY3_PORT RELAY3_GPIO_Port
-#define RELAY4_PIN  RELAY4_Pin
+#define RELAY4_PIN RELAY4_Pin
 #define RELAY4_PORT RELAY4_GPIO_Port
-#define RELAY5_PIN  RELAY5_Pin
+#define RELAY5_PIN RELAY5_Pin
 #define RELAY5_PORT RELAY5_GPIO_Port
-#define RELAY6_PIN  RELAY6_Pin
+#define RELAY6_PIN RELAY6_Pin
 #define RELAY6_PORT RELAY6_GPIO_Port
-#define RELAY7_PIN  RELAY7_Pin
+#define RELAY7_PIN RELAY7_Pin
 #define RELAY7_PORT RELAY7_GPIO_Port
-#define RELAY8_PIN  RELAY8_Pin
+#define RELAY8_PIN RELAY8_Pin
 #define RELAY8_PORT RELAY8_GPIO_Port
 
 /* Switch pins (берутся напрямую из main.h) */
-#define SWITCH1_PIN  SWITCH1_Pin
+#define SWITCH1_PIN SWITCH1_Pin
 #define SWITCH1_PORT SWITCH1_GPIO_Port
-#define SWITCH2_PIN  SWITCH2_Pin
+#define SWITCH2_PIN SWITCH2_Pin
 #define SWITCH2_PORT SWITCH2_GPIO_Port
-#define SWITCH3_PIN  SWITCH3_Pin
+#define SWITCH3_PIN SWITCH3_Pin
 #define SWITCH3_PORT SWITCH3_GPIO_Port
-#define SWITCH4_PIN  SWITCH4_Pin
+#define SWITCH4_PIN SWITCH4_Pin
 #define SWITCH4_PORT SWITCH4_GPIO_Port
-#define SWITCH5_PIN  SWITCH5_Pin
+#define SWITCH5_PIN SWITCH5_Pin
 #define SWITCH5_PORT SWITCH5_GPIO_Port
-#define SWITCH6_PIN  SWITCH6_Pin
+#define SWITCH6_PIN SWITCH6_Pin
 #define SWITCH6_PORT SWITCH6_GPIO_Port
-#define SWITCH7_PIN  SWITCH7_Pin
+#define SWITCH7_PIN SWITCH7_Pin
 #define SWITCH7_PORT SWITCH7_GPIO_Port
-#define SWITCH8_PIN  SWITCH8_Pin
+#define SWITCH8_PIN SWITCH8_Pin
 #define SWITCH8_PORT SWITCH8_GPIO_Port
 
 #endif /* BOARD_CONFIG_H */
