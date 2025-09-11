@@ -10,8 +10,6 @@
 #include "modbus_map.h"
 #include "relay_driver.h"
 
-extern UART_HandleTypeDef huart1; /* из usart.c (CubeMX) */
-
 /* helper: map human config -> microtbx constants */
 static inline int tbx_map_port(int p) { return (p == 2) ? TBX_MB_UART_PORT2 : TBX_MB_UART_PORT1; }
 static inline int tbx_map_stopbits(int s) { return (s == 2) ? TBX_MB_UART_2_STOPBITS : TBX_MB_UART_1_STOPBITS; }

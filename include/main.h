@@ -76,26 +76,26 @@ extern "C"
 #define SWITCH7_GPIO_Port GPIOA
 #define SWITCH8_Pin GPIO_PIN_7
 #define SWITCH8_GPIO_Port GPIOA
-#define RELAY1_Pin GPIO_PIN_0
-#define RELAY1_GPIO_Port GPIOB
-#define RELAY2_Pin GPIO_PIN_1
-#define RELAY2_GPIO_Port GPIOB
-#define RELAY3_Pin GPIO_PIN_2
-#define RELAY3_GPIO_Port GPIOB
-#define USART1_TX_Pin GPIO_PIN_9
-#define USART1_TX_GPIO_Port GPIOA
-#define USART1_RX_Pin GPIO_PIN_10
-#define USART1_RX_GPIO_Port GPIOA
-#define RELAY4_Pin GPIO_PIN_3
-#define RELAY4_GPIO_Port GPIOB
-#define RELAY5_Pin GPIO_PIN_4
-#define RELAY5_GPIO_Port GPIOB
-#define RELAY6_Pin GPIO_PIN_5
-#define RELAY6_GPIO_Port GPIOB
-#define RELAY7_Pin GPIO_PIN_6
+#define USART_B10_TX_Pin GPIO_PIN_10
+#define USART_B10_TX_GPIO_Port GPIOB
+#define USART_B11_RX_Pin GPIO_PIN_11
+#define USART_B11_RX_GPIO_Port GPIOB
+#define RELAY8_Pin GPIO_PIN_15
+#define RELAY8_GPIO_Port GPIOA
+#define RELAY7_Pin GPIO_PIN_3
 #define RELAY7_GPIO_Port GPIOB
-#define RELAY8_Pin GPIO_PIN_7
-#define RELAY8_GPIO_Port GPIOB
+#define RELAY6_Pin GPIO_PIN_4
+#define RELAY6_GPIO_Port GPIOB
+#define RELAY5_Pin GPIO_PIN_5
+#define RELAY5_GPIO_Port GPIOB
+#define RELAY4_Pin GPIO_PIN_6
+#define RELAY4_GPIO_Port GPIOB
+#define RELAY3_Pin GPIO_PIN_7
+#define RELAY3_GPIO_Port GPIOB
+#define RELAY2_Pin GPIO_PIN_8
+#define RELAY2_GPIO_Port GPIOB
+#define RELAY1_Pin GPIO_PIN_9
+#define RELAY1_GPIO_Port GPIOB
 
   /* USER CODE BEGIN Private defines */
 
