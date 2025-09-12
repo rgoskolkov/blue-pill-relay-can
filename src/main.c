@@ -23,12 +23,12 @@ int main(void)
   Input_Init();
   Relay_Init();
   ModbusAdapter_Init();
+  Start_LED_Blink();
 
   while (1)
   {
     Input_Update();
     ModbusAdapter_Poll();
-    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     Process_LED_Blink();
     HAL_Delay(1);
   }
