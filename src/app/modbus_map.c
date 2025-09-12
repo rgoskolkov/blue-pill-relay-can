@@ -12,11 +12,11 @@ void modbus_map_init(void)
 {
     memset(switch_states, 0, sizeof(switch_states));
     memset(coil_cache, 0, sizeof(coil_cache));
-    Relay_Init();
+    relay_init();
     /* ensure relays off on startup and update cache */
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i)
     {
-        Relay_SetState(i, 0);
+        relay_off(i);
         coil_cache[i] = 0;
     }
 }
@@ -28,7 +28,7 @@ void modbus_map_update_switch(uint8_t idx, uint8_t state)
         return;
     switch_states[idx] = state ? 1 : 0;
     /* mirror switch -> relay and update cache */
-    Relay_SetState(idx, switch_states[idx]);
+    state ? relay_on(idx) : relay_off(idx);
     coil_cache[idx] = Relay_GetState(idx);
 }
 

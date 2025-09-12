@@ -70,8 +70,7 @@ tTbxMbServerResult ModbusWriteCoil(tTbxMbServer channel, uint16_t addr, uint8_t 
     {
         if (addr == (RELAY_1_ADDRESS + i))
         {
-            /* value expected 0 or 1 */
-            Relay_SetState(i, value ? 1 : 0);
+            value ? relay_on(i) : relay_off(i);
             /* обновим внутренний кэш перед отдачей следующего запроса */
             modbus_map_update_registers();
             Start_LED_Blink();

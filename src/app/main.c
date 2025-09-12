@@ -21,7 +21,7 @@ int main(void)
 
   modbus_map_init();
   Input_Init();
-  Relay_Init();
+  relay_init();
   ModbusAdapter_Init();
   Start_LED_Blink();
 
