@@ -23,13 +23,14 @@ int main(void)
   Input_Init();
   relay_init();
   ModbusAdapter_Init();
-  Start_LED_Blink();
+  led_Blink_Init();
+  start_Short_LED_Blink(2);
 
   while (1)
   {
     Input_Update();
     ModbusAdapter_Poll();
-    Process_LED_Blink();
+    process_LED_Blink();
     HAL_Delay(1);
   }
 }

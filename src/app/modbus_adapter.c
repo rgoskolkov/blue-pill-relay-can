@@ -56,7 +56,7 @@ tTbxMbServerResult ModbusReadCoil(tTbxMbServer channel, uint16_t addr, uint8_t *
         if (addr == (RELAY_1_ADDRESS + i))
         {
             *value = modbus_map_get_coil(i); /* returns 0/1 */
-            Start_LED_Blink();
+            start_Heartbeat_Blink();
             return TBX_MB_SERVER_OK;
         }
     }
@@ -73,7 +73,7 @@ tTbxMbServerResult ModbusWriteCoil(tTbxMbServer channel, uint16_t addr, uint8_t 
             value ? relay_on(i) : relay_off(i);
             /* обновим внутренний кэш перед отдачей следующего запроса */
             modbus_map_update_registers();
-            Start_LED_Blink();
+            start_Short_LED_Blink(3);
             return TBX_MB_SERVER_OK;
         }
     }
@@ -88,11 +88,9 @@ tTbxMbServerResult ModbusReadInputReg(tTbxMbServer channel, uint16_t addr, uint1
     {
     case 30000U:
         *value = 1234U;
-        Start_LED_Blink();
         return TBX_MB_SERVER_OK;
     case 30001U:
         *value = 5678U;
-        Start_LED_Blink();
         return TBX_MB_SERVER_OK;
     default:
         return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;

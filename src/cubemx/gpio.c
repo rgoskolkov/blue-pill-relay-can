@@ -54,8 +54,8 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, RELAY_VCC_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, RELAY2_Pin | RELAY1_Pin | RELAY_GND_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, RELAY_GND_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, RELAY2_Pin | RELAY1_Pin | RELAY_VCC_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, RELAY8_Pin | RELAY7_Pin | RELAY6_Pin | RELAY5_Pin | RELAY4_Pin | RELAY3_Pin, GPIO_PIN_SET);
@@ -81,8 +81,8 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : RELAY_VCC_Pin */
   GPIO_InitStruct.Pin = RELAY_VCC_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RELAY_VCC_GPIO_Port, &GPIO_InitStruct);
 
@@ -104,7 +104,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin : RELAY_GND_Pin */
   GPIO_InitStruct.Pin = RELAY_GND_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RELAY_GND_GPIO_Port, &GPIO_InitStruct);
 }

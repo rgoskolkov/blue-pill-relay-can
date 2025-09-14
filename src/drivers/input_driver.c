@@ -66,7 +66,7 @@ void Input_Update(void)
                 
                 // Мгновенно переключаем состояние
                 switch_state[i] = !switch_state[i];
-                Start_LED_Blink();
+                start_Short_LED_Blink(3);
                 modbus_map_update_switch(i, switch_state[i]);
             }
             else // Переход в HIGH (отпускание)
@@ -78,7 +78,7 @@ void Input_Update(void)
                 {
                     // Долгое нажатие - отменяем действие
                     switch_state[i] = !switch_state[i];
-                    Start_LED_Blink();
+                    start_Short_LED_Blink(3);
                     modbus_map_update_switch(i, switch_state[i]);
                 }
             }
