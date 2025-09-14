@@ -43,7 +43,7 @@
 #include "stm32f1xx_hal.h"
 
 extern TIM_HandleTypeDef htim1;
-extern UART_HandleTypeDef huart3;
+extern UART_HandleTypeDef huart2;
 
 /* Local RX byte used by HAL ISR */
 static uint8_t rxByte = 0U;
@@ -73,7 +73,7 @@ void TbxMbPortUartInit(tTbxMbUartPort port,
   TBX_UNUSED_ARG(parity);
 
   /* Start reception of first byte using HAL (interrupt-driven). Ignore HAL_BUSY. */
-  (void)HAL_UART_Receive_IT(&huart3, &rxByte, 1U);
+  (void)HAL_UART_Receive_IT(&huart2, &rxByte, 1U);
 } /*** end of TbxMbPortUartInit ***/
 
 /************************************************************************************/
@@ -98,7 +98,7 @@ uint8_t TbxMbPortUartTransmit(tTbxMbUartPort port,
 {
   uint8_t result = TBX_ERROR;
   TBX_UNUSED_ARG(port);
-  if (HAL_UART_Transmit_IT(&huart3, (uint8_t *)data, len) == HAL_OK)
+  if (HAL_UART_Transmit_IT(&huart2, (uint8_t *)data, len) == HAL_OK)
   {
     result = TBX_OK;
   }
@@ -139,7 +139,7 @@ uint16_t TbxMbPortTimerCount(void)
   {
     counterStarted = TBX_TRUE;
     __HAL_TIM_ENABLE(&htim1);
-    }
+  }
 /* If timer handle valid, return its counter, else scale HAL_GetTick */
 #if 1
   return (uint16_t)__HAL_TIM_GET_COUNTER(&htim1);
@@ -151,22 +151,22 @@ uint16_t TbxMbPortTimerCount(void)
 /* HAL callbacks here so they use the same rxByte buffer */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if (huart == &huart3)
+  if (huart == &huart2)
   {
-    uint32_t errorCode = HAL_UART_GetError(&huart3);
+    uint32_t errorCode = HAL_UART_GetError(&huart2);
     if ((errorCode & (HAL_UART_ERROR_NE | HAL_UART_ERROR_PE | HAL_UART_ERROR_FE)) == 0U)
     {
       /* inform TBX about received byte */
       TbxMbUartDataReceived(TBX_MB_UART_PORT1, &rxByte, 1U);
     }
     /* restart reception for next byte (ignore return) */
-    (void)HAL_UART_Receive_IT(&huart3, &rxByte, 1U);
+    (void)HAL_UART_Receive_IT(&huart2, &rxByte, 1U);
   }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if (huart == &huart3)
+  if (huart == &huart2)
   {
     TbxMbUartTransmitComplete(TBX_MB_UART_PORT1);
   }

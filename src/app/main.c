@@ -16,7 +16,7 @@ int main(void)
   HAL_Init();
   SystemClock_Config();  // сгенерирован CubeMX
   MX_GPIO_Init();        // CubeMX
-  MX_USART3_UART_Init(); // CubeMX
+  MX_USART2_UART_Init(); // CubeMX
   MX_TIM1_Init();        // CubeMX
 
   modbus_map_init();

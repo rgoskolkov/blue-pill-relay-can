@@ -14,7 +14,7 @@
 Сгенерированный проект содержит Src/ и Inc/ — копируйте в наш проект следующие файлы:
 
 - From CubeMX Src/ -> project/src/
-  - usart.c               (MX_USART3_UART_Init, huart3)
+  - usart.c               (MX_USART2_UART_Init, huart2)
   - gpio.c                (если сгенерирован и вы хотите использовать MX_GPIO_Init())
   - system_stm32f1xx.c    (SystemClock_Config / тактирование)
   - stm32f1xx_it.c        (обработчики прерываний)
@@ -80,7 +80,7 @@ build_flags =
 1. Запуск сборки:
    - cd /Users/romanoskolkov/Desktop/cube/plue-pill-relay-modbus
    - pio run
-2. Если сборка падает с undefined reference — пришлите вывод `pio run -v` и я подгоню недостающие символы (обычно huart3, MX_USART1_UART_Init, SystemClock_Config, MX_GPIO_Init и т.п.)
+2. Если сборка падает с undefined reference — пришлите вывод `pio run -v` и я подгоню недостающие символы (обычно huart2, MX_USART2_UART_Init, SystemClock_Config, MX_GPIO_Init и т.п.)
 
 ## Примечание про Modbus-стек
 - Если CubeMX сгенерировал FreeModbus — хорошо, я помогу подключить его.

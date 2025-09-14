@@ -25,103 +25,103 @@
 
 /* USER CODE END 0 */
 
-UART_HandleTypeDef huart3;
+UART_HandleTypeDef huart2;
 
-/* USART3 init function */
+/* USART2 init function */
 
-void MX_USART3_UART_Init(void)
+void MX_USART2_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART3_Init 0 */
+  /* USER CODE BEGIN USART2_Init 0 */
 
-  /* USER CODE END USART3_Init 0 */
+  /* USER CODE END USART2_Init 0 */
 
-  /* USER CODE BEGIN USART3_Init 1 */
+  /* USER CODE BEGIN USART2_Init 1 */
 
   /* USER CODE END USART3_Init 1 */
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = MODBUS_BAUDRATE;
-  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = MODBUS_BAUDRATE;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
   /* Stop bits from board_config.h: 1 or 2 */
-  huart3.Init.StopBits = (MODBUS_UART_STOPBITS == 2) ? UART_STOPBITS_2 : UART_STOPBITS_1;
+  huart2.Init.StopBits = (MODBUS_UART_STOPBITS == 2) ? UART_STOPBITS_2 : UART_STOPBITS_1;
 /* Parity mapping: 0 = none, 1 = odd, 2 = even */
 #if (MODBUS_UART_PARITY == 1)
-  huart3.Init.Parity = UART_PARITY_ODD;
+  huart2.Init.Parity = UART_PARITY_ODD;
 #elif (MODBUS_UART_PARITY == 2)
-  huart3.Init.Parity = UART_PARITY_EVEN;
+  huart2.Init.Parity = UART_PARITY_EVEN;
 #else
-  huart3.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Parity = UART_PARITY_NONE;
 #endif
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN USART3_Init 2 */
+  /* USER CODE BEGIN USART2_Init 2 */
 
-  /* USER CODE END USART3_Init 2 */
+  /* USER CODE END USART2_Init 2 */
 }
 
 void HAL_UART_MspInit(UART_HandleTypeDef *uartHandle)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if (uartHandle->Instance == USART3)
+  if (uartHandle->Instance == USART2)
   {
-    /* USER CODE BEGIN USART3_MspInit 0 */
+    /* USER CODE BEGIN USART2_MspInit 0 */
 
-    /* USER CODE END USART3_MspInit 0 */
-    /* USART3 clock enable */
-    __HAL_RCC_USART3_CLK_ENABLE();
+    /* USER CODE END USART2_MspInit 0 */
+    /* USART2 clock enable */
+    __HAL_RCC_USART2_CLK_ENABLE();
 
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    /**USART3 GPIO Configuration
-    PB10     ------> USART3_TX
-    PB11     ------> USART3_RX
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**USART2 GPIO Configuration
+    PA2     ------> USART2_TX
+    PA3     ------> USART2_RX
     */
-    GPIO_InitStruct.Pin = USART_B10_TX_Pin;
+    GPIO_InitStruct.Pin = USART_A2_TX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(USART_B10_TX_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(USART_A2_TX_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = USART_B11_RX_Pin;
+    GPIO_InitStruct.Pin = USART_A3_RX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(USART_B11_RX_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(USART_A3_RX_GPIO_Port, &GPIO_InitStruct);
 
-    /* USART3 interrupt Init */
-    HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(USART3_IRQn);
-    /* USER CODE BEGIN USART3_MspInit 1 */
+    /* USART2 interrupt Init */
+    HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(USART2_IRQn);
+    /* USER CODE BEGIN USART2_MspInit 1 */
 
-    /* USER CODE END USART3_MspInit 1 */
+    /* USER CODE END USART2_MspInit 1 */
   }
 }
 
 void HAL_UART_MspDeInit(UART_HandleTypeDef *uartHandle)
 {
 
-  if (uartHandle->Instance == USART3)
+  if (uartHandle->Instance == USART2)
   {
-    /* USER CODE BEGIN USART3_MspDeInit 0 */
+    /* USER CODE BEGIN USART2_MspDeInit 0 */
 
-    /* USER CODE END USART3_MspDeInit 0 */
+    /* USER CODE END USART2_MspDeInit 0 */
     /* Peripheral clock disable */
-    __HAL_RCC_USART3_CLK_DISABLE();
+    __HAL_RCC_USART2_CLK_DISABLE();
 
-    /**USART3 GPIO Configuration
-    PB10     ------> USART3_TX
-    PB11     ------> USART3_RX
+    /**USART2 GPIO Configuration
+    PA2     ------> USART2_TX
+    PA3     ------> USART2_RX
     */
-    HAL_GPIO_DeInit(GPIOB, USART_B10_TX_Pin | USART_B11_RX_Pin);
+    HAL_GPIO_DeInit(GPIOA, USART_A2_TX_Pin | USART_A3_RX_Pin);
 
-    /* USART3 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(USART3_IRQn);
-    /* USER CODE BEGIN USART3_MspDeInit 1 */
+    /* USART2 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(USART2_IRQn);
+    /* USER CODE BEGIN USART2_MspDeInit 1 */
 
-    /* USER CODE END USART3_MspDeInit 1 */
+    /* USER CODE END USART2_MspDeInit 1 */
   }
 }
 
