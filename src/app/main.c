@@ -55,9 +55,8 @@ int main(void)
   
   MX_FREERTOS_Init();
   modbusAdapter_Init();
-  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-  HAL_Delay(100);
-  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+  
+
    /* Init scheduler */
   osKernelStart();
   /* Start scheduler */

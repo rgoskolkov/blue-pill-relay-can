@@ -79,17 +79,10 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  short_blink_queue = xQueueCreate(5, sizeof(uint8_t));
-  long_blink_queue = xQueueCreate(5, sizeof(uint8_t));
-  heartbeat_queue = xQueueCreate(1, sizeof(uint8_t));
-  error_signal_queue = xQueueCreate(1, sizeof(uint8_t));
   /* USER CODE END RTOS_QUEUES */
 
   /* USER CODE BEGIN RTOS_THREADS */
-  xTaskCreate(short_blink_task, "short_blink", 128, NULL, 1, NULL);
-  xTaskCreate(long_blink_task, "long_blink", 128, NULL, 1, NULL);
-  xTaskCreate(heartbeat_task, "heartbeat", 128, NULL, 1, NULL);
-  xTaskCreate(error_signal_task, "error_signal", 128, NULL, 1, NULL);
+  xTaskCreate(led_task, "led_task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
   xTaskCreate(input_task, "input_task", 128, NULL, 1, NULL);
   xTaskCreate(modbusTask, "modbusTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
   /* USER CODE END RTOS_THREADS */
