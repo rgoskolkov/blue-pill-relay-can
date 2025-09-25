@@ -1,5 +1,6 @@
 #include "main.h"
 #include "gpio.h"
+#include "cmsis_os.h"
 #include "usart.h"
 #include "modbus_map.h"
 #include "input_driver.h"
@@ -7,31 +8,66 @@
 #include "relay_driver.h"
 #include "tim.h"
 #include "led_driver.h"
+#include "stm32f1xx.h"
+#include <stdio.h>
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
+/* USER CODE BEGIN PFP */
 
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
+
+  /* USER CODE BEGIN 1 */
+  // CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  // ITM->LAR = 0xC5ACCE55;
+  // ITM->TCR |= ITM_TCR_ITMENA_Msk;
+  // ITM->TER |= 1; // ITM Port 0 enabled
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   SystemClock_Config();  // сгенерирован CubeMX
   MX_GPIO_Init();        // CubeMX
-  MX_USART2_UART_Init(); // CubeMX
   MX_TIM1_Init();        // CubeMX
-
+  MX_USART3_UART_Init(); // CubeMX
+  
+  printf("ITM output test\n");
   modbus_map_init();
   Input_Init();
   relay_init();
-  ModbusAdapter_Init();
-  led_Blink_Init();
-  start_Short_LED_Blink(2);
-
+  
+  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
+  
+  MX_FREERTOS_Init();
+  modbusAdapter_Init();
+  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+  HAL_Delay(100);
+  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+   /* Init scheduler */
+  osKernelStart();
+  /* Start scheduler */
+ 
+  /* We should never get here as control is now taken by the scheduler */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
   {
-    Input_Update();
-    ModbusAdapter_Poll();
-    process_LED_Blink();
-    HAL_Delay(1);
+
   }
 }
 
@@ -80,7 +116,7 @@ void SystemClock_Config(void)
 
 /**
   * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM2 interrupt took place, inside
+  * @note   This function is called  when TIM4 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
   * a global variable "uwTick" used as application time base.
   * @param  htim : TIM handle
@@ -91,7 +127,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM2)
+  if (htim->Instance == TIM4)
   {
     HAL_IncTick();
   }

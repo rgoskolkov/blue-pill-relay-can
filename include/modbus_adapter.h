@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 
-void ModbusAdapter_Init(void);
-
-void ModbusAdapter_Poll(void);
+void modbusAdapter_Init(void);
+void modbusTask(void * pvParameters);
 
 #endif // MODBUS_ADAPTER_H

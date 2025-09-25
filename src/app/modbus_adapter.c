@@ -56,10 +56,11 @@ tTbxMbServerResult ModbusReadCoil(tTbxMbServer channel, uint16_t addr, uint8_t *
         if (addr == (RELAY_1_ADDRESS + i))
         {
             *value = modbus_map_get_coil(i); /* returns 0/1 */
-            start_Heartbeat_Blink();
+            reset_Heartbeat_Timer();
             return TBX_MB_SERVER_OK;
         }
     }
+    signal_error();
     return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
 }
 
@@ -77,6 +78,7 @@ tTbxMbServerResult ModbusWriteCoil(tTbxMbServer channel, uint16_t addr, uint8_t 
             return TBX_MB_SERVER_OK;
         }
     }
+    signal_error();
     return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
 }
 
@@ -93,6 +95,7 @@ tTbxMbServerResult ModbusReadInputReg(tTbxMbServer channel, uint16_t addr, uint1
         *value = 5678U;
         return TBX_MB_SERVER_OK;
     default:
+        signal_error();
         return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
     }
 }
@@ -104,7 +107,7 @@ tTbxMbServerResult ModbusReadInputReg(tTbxMbServer channel, uint16_t addr, uint1
 tTbxMbTp modbusTp;
 tTbxMbServer modbusServer;
 
-void ModbusAdapter_Init(void)
+void modbusAdapter_Init(void)
 {
     /* Не стартуем HAL_UART_Receive_IT() здесь — это делает порт (TbxMbPortUartInit). */
     int tbx_port = tbx_map_port(MODBUS_UART_PORT);
@@ -114,15 +117,22 @@ void ModbusAdapter_Init(void)
 
     modbusTp = TbxMbRtuCreate(MODBUS_SLAVE_ID, tbx_port, tbx_baud, tbx_stop, tbx_par);
     modbusServer = TbxMbServerCreate(modbusTp);
-
+  
     /* регистрация application callbacks */
     TbxMbServerSetCallbackReadCoil(modbusServer, ModbusReadCoil);
     TbxMbServerSetCallbackWriteCoil(modbusServer, ModbusWriteCoil);
     TbxMbServerSetCallbackReadInputReg(modbusServer, ModbusReadInputReg);
 }
 
-/* Poll/task вызов для стека: вызывать в main loop */
-void ModbusAdapter_Poll(void)
+void modbusTask(void * pvParameters)
 {
+  TBX_UNUSED_ARG(pvParameters);
+
+  /* Enter infinite task loop. */
+  for (;;)
+  {
+    /* Continuously call the Modbus stack event task function. */
     TbxMbEventTask();
-}
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+} /*** end of ModbusTask ***/

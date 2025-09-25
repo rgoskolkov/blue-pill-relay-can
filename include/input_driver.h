@@ -6,5 +6,6 @@
 
 void Input_Init(void);
 void Input_Update(void);
+void input_task(void *argument);
 
 #endif

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "led_driver.h"
+#include <stdio.h>
 
 #define LONG_PRESS_TIME_MS 2000
 
@@ -32,6 +33,7 @@ void Input_Init(void)
 void Input_Update(void)
 {
     uint32_t now = HAL_GetTick();
+    printf("Input_Update at %lu\n", now);
 
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i)
     {
@@ -52,10 +54,13 @@ void Input_Update(void)
         }
 
         uint8_t current_state = (HAL_GPIO_ReadPin(port, pin) == GPIO_PIN_SET) ? 0u : 1u;
+        printf("Switch %d: %d\n", i, current_state);
 
         if (current_state != prev_states[i])
         {
+            printf("Switch %d state changed\n", i);
             if (!debounce_check(i)) continue;
+            printf("Switch %d debounce passed\n", i);
             
             last_event_ts[i] = now;
             prev_states[i] = current_state;
@@ -66,6 +71,7 @@ void Input_Update(void)
                 
                 // Мгновенно переключаем состояние
                 switch_state[i] = !switch_state[i];
+                printf("Calling start_Short_LED_Blink(3)\n");
                 start_Short_LED_Blink(3);
                 modbus_map_update_switch(i, switch_state[i]);
             }
@@ -83,5 +89,14 @@ void Input_Update(void)
                 }
             }
         }
+    }
+}
+
+void input_task(void *argument)
+{
+    for(;;)
+    {
+        Input_Update();
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
