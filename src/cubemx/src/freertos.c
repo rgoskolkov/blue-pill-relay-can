@@ -29,6 +29,7 @@
 #include "input_driver.h"
 #include "modbus_adapter.h"
 /* USER CODE END Includes */
+
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -38,7 +39,6 @@
 /* USER CODE BEGIN PD */
 
 /* USER CODE END PD */
-#include "modbus_adapter.h"
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
@@ -47,11 +47,14 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+TaskHandle_t led_task_handle;
+TaskHandle_t input_task_handle;
+TaskHandle_t modbus_task_handle;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+
 /* USER CODE END FunctionPrototypes */
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -82,9 +85,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* USER CODE BEGIN RTOS_THREADS */
-  xTaskCreate(led_task, "led_task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-  xTaskCreate(input_task, "input_task", 128, NULL, 1, NULL);
-  xTaskCreate(modbusTask, "modbusTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(led_task, "led_task", configMINIMAL_STACK_SIZE, &led_task_handle, 1, NULL);
+  xTaskCreate(input_task, "input_task", 128, &input_task_handle, 1, NULL);
+  xTaskCreate(modbusTask, "modbusTask", 512, &modbus_task_handle, 1, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -95,5 +98,5 @@ void MX_FREERTOS_Init(void) {
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-/* USER CODE END Application */
 
+/* USER CODE END Application */

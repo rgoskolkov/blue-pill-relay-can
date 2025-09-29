@@ -20,7 +20,9 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+extern TaskHandle_t led_task_handle;
+extern TaskHandle_t input_task_handle;
+extern TaskHandle_t modbus_task_handle;
 /* USER CODE END 0 */
 
 /**
@@ -55,6 +57,9 @@ int main(void)
   
   MX_FREERTOS_Init();
   modbusAdapter_Init();
+
+  // Сигнал об успешном старте
+  led_signal_ack();
   
 
    /* Init scheduler */
@@ -110,7 +115,44 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+#include <string.h>
 
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    int blink_count = 5; // По умолчанию 5 миганий для неизвестной задачи
+
+    if (xTask == led_task_handle) {
+        blink_count = 1;
+    } else if (xTask == input_task_handle) {
+        blink_count = 2;
+    } else if (xTask == modbus_task_handle) {
+        blink_count = 3;
+    }
+    // Задачу таймеров (Tmr Svc) нельзя получить так просто,
+    // но если это не одна из трех наших, скорее всего, это она.
+
+    for(;;)
+    {
+        for (int i=0; i < blink_count; i++) {
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+            HAL_Delay(200);
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+            HAL_Delay(200);
+        }
+        HAL_Delay(1000);
+    }
+}
+
+void vApplicationMallocFailedHook(void)
+{
+   /* This function will be called if a call to pvPortMalloc() fails. */
+   /* Blink fast pattern for malloc failed */
+   for(;;)
+   {
+      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+      HAL_Delay(50);
+   }
+}
 /* USER CODE END 4 */
 
 /**

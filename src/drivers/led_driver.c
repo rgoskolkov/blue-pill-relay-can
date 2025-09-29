@@ -7,7 +7,7 @@
 #define LED_OFF() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET)
 
 #define HEARTBEAT_PERIOD_MS 10000 
-#define TASK_LOOP_DELAY_MS 200    
+#define TASK_LOOP_DELAY_MS 100    
 
 // --- Глобальные флаги/счетчики ---
 static volatile uint8_t g_ack_signal_flag = 0;
@@ -39,8 +39,9 @@ void led_task(void *argument) {
             g_ack_signal_flag = 0; // Сбрасываем флаг
             for (uint8_t i = 0; i < 3; i++) {
                 LED_ON();
-                vTaskDelay(pdMS_TO_TICKS(200));
+                vTaskDelay(pdMS_TO_TICKS(100));
                 LED_OFF();
+                vTaskDelay(pdMS_TO_TICKS(100));
             }
             continue; // Пропускаем остаток цикла, чтобы не было ложного хартбита
         }

@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include "led_driver.h"
 #include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define LONG_PRESS_TIME_MS 2000
 

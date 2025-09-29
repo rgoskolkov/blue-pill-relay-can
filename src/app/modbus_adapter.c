@@ -10,6 +10,8 @@
 #include "modbus_map.h"
 #include "relay_driver.h"
 #include "led_driver.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* helper: map human config -> microtbx constants */
 static inline int tbx_map_port(int p) { return (p == 2) ? TBX_MB_UART_PORT2 : TBX_MB_UART_PORT1; }
@@ -45,7 +47,6 @@ static inline int tbx_map_baudrate(int baud)
    Callbacks: интеграция с modbus_map.c
    - Чтение coil'ов (релеи) => modbus_map_get_coil / Relay_GetState
    - Запись coil'ов => Relay_SetState + обновление кеша (modbus_map_update_registers)
-   - Чтение input-registers (пример: 30000/30001) — возвращаем константы, можно заменить на API modbus_map
    --------------------------------------------------------------------------*/
 
 /* Read single coil (coil address interpreted relative to RELAY_1_ADDRESS constants in modbus_map.c) */
@@ -74,30 +75,12 @@ tTbxMbServerResult ModbusWriteCoil(tTbxMbServer channel, uint16_t addr, uint8_t 
             value ? relay_on(i) : relay_off(i);
             /* обновим внутренний кэш перед отдачей следующего запроса */
             modbus_map_update_registers();
-            led_signal_ack();
+            // led_signal_ack();
             return TBX_MB_SERVER_OK;
         }
     }
     // Ошибки пока не обрабатываем светодиодом, чтобы не спамить
     return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
-}
-
-/* Read input register (example from tutorial). Возвращаем две тестовые величины.
-   При желании замените реализацией, читающей значения из modbus_map (если у вас есть input registers). */
-tTbxMbServerResult ModbusReadInputReg(tTbxMbServer channel, uint16_t addr, uint16_t *value)
-{
-    switch (addr)
-    {
-    case 30000U:
-        *value = 1234U;
-        return TBX_MB_SERVER_OK;
-    case 30001U:
-        *value = 5678U;
-        return TBX_MB_SERVER_OK;
-    default:
-        // Ошибки пока не обрабатываем светодиодом, чтобы не спамить
-        return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
-    }
 }
 
 /* --------------------------------------------------------------------------*/
@@ -121,7 +104,6 @@ void modbusAdapter_Init(void)
     /* регистрация application callbacks */
     TbxMbServerSetCallbackReadCoil(modbusServer, ModbusReadCoil);
     TbxMbServerSetCallbackWriteCoil(modbusServer, ModbusWriteCoil);
-    TbxMbServerSetCallbackReadInputReg(modbusServer, ModbusReadInputReg);
 }
 
 void modbusTask(void * pvParameters)
@@ -132,7 +114,9 @@ void modbusTask(void * pvParameters)
   for (;;)
   {
     /* Continuously call the Modbus stack event task function. */
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); // LED ON
     TbxMbEventTask();
-    vTaskDelay(pdMS_TO_TICKS(10));
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET); // LED OFF
+    taskYIELD();
   }
 } /*** end of ModbusTask ***/
