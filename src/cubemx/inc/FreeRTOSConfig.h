@@ -138,7 +138,14 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 /* Normal assert() semantics without relying on the provision of an assert.h
 header file. */
 /* USER CODE BEGIN 1 */
-#define configASSERT( x ) if ((x) == 0) { taskDISABLE_INTERRUPTS(); for( ;; ) { volatile int i; for(i=0; i<1000000; i++); HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin); } }
+#include <stdint.h>
+/* Forward declaration for our assert handler; implementation in src/app/assert_handler.c */
+void configASSERT_Handler(uint32_t pc);
+
+/* Improved configASSERT: on failure, disable interrupts, call handler with
+  return address (PC) for post-mortem, and halt. The handler will store the
+  PC in a volatile variable and blink a distinct pattern. */
+#define configASSERT( x ) if ((x) == 0) { taskDISABLE_INTERRUPTS(); configASSERT_Handler((uint32_t)__builtin_return_address(0)); for( ;; ) { __asm volatile ("nop"); } }
 /* USER CODE END 1 */
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS

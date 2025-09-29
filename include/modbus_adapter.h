@@ -1,9 +1,7 @@
 #ifndef MODBUS_ADAPTER_H
 #define MODBUS_ADAPTER_H
 
-#include <stdint.h>
-
-void modbusAdapter_Init(void);
-void modbusTask(void * pvParameters);
+void modbus_adapter_init(void);
+void sync_task(void *argument);
 
 #endif // MODBUS_ADAPTER_H

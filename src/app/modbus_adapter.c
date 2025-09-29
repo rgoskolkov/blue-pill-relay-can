@@ -1,122 +1,82 @@
+#include "modbus_adapter.h"
+#include "Modbus.h"
 #include "main.h"
-#include "board_config.h"
-#include "stm32f1xx_hal.h"
-#include <stdint.h>
-#include <string.h>
-
-#include "microtbx.h"
-#include "microtbxmodbus.h"
-
-#include "modbus_map.h"
+#include "usart.h" 
 #include "relay_driver.h"
 #include "led_driver.h"
+#include "board_config.h"
+#include "cmsis_os2.h" // Используем CMSIS-RTOS v2 API для работы с семафором, предоставляемым Modbus
+#include "stm32f1xx.h"
 #include "FreeRTOS.h"
-#include "task.h"
 
-/* helper: map human config -> microtbx constants */
-static inline int tbx_map_port(int p) { return (p == 2) ? TBX_MB_UART_PORT2 : TBX_MB_UART_PORT1; }
-static inline int tbx_map_stopbits(int s) { return (s == 2) ? TBX_MB_UART_2_STOPBITS : TBX_MB_UART_1_STOPBITS; }
-static inline int tbx_map_parity(int p)
+// --- Глобальные переменные ---
+modbusHandler_t mHandler;
+// 1 регистр для хранения состояния 8 коилов
+uint16_t usRegHolding[1] = {0}; 
+
+// forward declaration for diagnostic task
+void modbus_diag_task(void *argument);
+/* Diagnostic IRQ counter exported from ISR file */
+extern volatile uint32_t usart3_irq_count;
+
+void modbus_adapter_init(void)
 {
-    if (p == 0)
-        return TBX_MB_NO_PARITY;
-    if (p == 1)
-        return TBX_MB_ODD_PARITY;
-    return TBX_MB_EVEN_PARITY;
-}
-static inline int tbx_map_baudrate(int baud)
-{
-    switch (baud)
-    {
-    case 9600:
-        return TBX_MB_UART_9600BPS;
-    case 19200:
-        return TBX_MB_UART_19200BPS;
-    case 38400:
-        return TBX_MB_UART_38400BPS;
-    case 57600:
-        return TBX_MB_UART_57600BPS;
-    case 115200:
-        return TBX_MB_UART_115200BPS;
-    default:
-        return TBX_MB_UART_19200BPS;
-    }
+    mHandler.uModbusType = MB_SLAVE;
+    mHandler.port = &huart3;
+    mHandler.u8id = MODBUS_SLAVE_ID;
+    mHandler.u16timeOut = 1000;
+    mHandler.EN_Port = NULL;
+    mHandler.xTypeHW = USART_HW;
+    mHandler.u16regs = usRegHolding;
+    mHandler.u16regsize = 8; // Увеличим, чтобы покрыть все запросы от HA
+
+    ModbusInit(&mHandler);
+    ModbusStart(&mHandler);
 }
 
-/* --------------------------------------------------------------------------
-   Callbacks: интеграция с modbus_map.c
-   - Чтение coil'ов (релеи) => modbus_map_get_coil / Relay_GetState
-   - Запись coil'ов => Relay_SetState + обновление кеша (modbus_map_update_registers)
-   --------------------------------------------------------------------------*/
-
-/* Read single coil (coil address interpreted relative to RELAY_1_ADDRESS constants in modbus_map.c) */
-tTbxMbServerResult ModbusReadCoil(tTbxMbServer channel, uint16_t addr, uint8_t *value)
+void sync_task(void *argument)
 {
-    for (uint8_t i = 0; i < NUM_SWITCHES; ++i)
+    uint16_t previous_coils_state = 0;
+
+    for(;;)
     {
-        if (addr == (RELAY_1_ADDRESS + i))
-        {
-            *value = modbus_map_get_coil(i); /* returns 0/1 */
-            led_signal_heartbeat();
-            return TBX_MB_SERVER_OK;
+        // Пытаемся захватить семафор, который защищает доступ к u16regs
+        // mHandler.ModBusSphrHandle — CMSIS-RTOS семафор, используем osSemaphoreAcquire
+        if (osSemaphoreAcquire(mHandler.ModBusSphrHandle, 10) == osOK)
+         {
+             uint16_t current_coils_state = usRegHolding[0];
+
+            // 1. ПРОВЕРКА ЗАПИСИ (Master -> Slave)
+            if (previous_coils_state != current_coils_state)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    if ((previous_coils_state & (1 << i)) != (current_coils_state & (1 << i)))
+                    {
+                        if ((current_coils_state & (1 << i))) {
+                            relay_on(i);
+                        } else {
+                            relay_off(i);
+                        }
+                    }
+                }
+                led_signal_ack();
+            }
+
+            // 2. ОБНОВЛЕНИЕ ДЛЯ ЧТЕНИЯ (Slave -> Master)
+            uint16_t actual_state = 0;
+            for (int i = 0; i < 8; i++) {
+                if (Relay_GetState(i)) {
+                    actual_state |= (1 << i);
+                }
+            }
+            usRegHolding[0] = actual_state;
+            previous_coils_state = actual_state;
+
+            // Используем CMSIS-RTOS v2 API, библиотека создала семафор через osSemaphoreNew
+            osSemaphoreRelease(mHandler.ModBusSphrHandle);
         }
+        
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
-    // Ошибки пока не обрабатываем светодиодом, чтобы не спамить
-    return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
 }
-
-/* Write single coil */
-tTbxMbServerResult ModbusWriteCoil(tTbxMbServer channel, uint16_t addr, uint8_t value)
-{
-    for (uint8_t i = 0; i < NUM_SWITCHES; ++i)
-    {
-        if (addr == (RELAY_1_ADDRESS + i))
-        {
-            value ? relay_on(i) : relay_off(i);
-            /* обновим внутренний кэш перед отдачей следующего запроса */
-            modbus_map_update_registers();
-            // led_signal_ack();
-            return TBX_MB_SERVER_OK;
-        }
-    }
-    // Ошибки пока не обрабатываем светодиодом, чтобы не спамить
-    return TBX_MB_SERVER_ERR_ILLEGAL_DATA_ADDR;
-}
-
-/* --------------------------------------------------------------------------*/
-/* Modbus adapter init / HAL callbacks                                        */
-/* --------------------------------------------------------------------------*/
-
-tTbxMbTp modbusTp;
-tTbxMbServer modbusServer;
-
-void modbusAdapter_Init(void)
-{
-    /* Не стартуем HAL_UART_Receive_IT() здесь — это делает порт (TbxMbPortUartInit). */
-    int tbx_port = tbx_map_port(MODBUS_UART_PORT);
-    int tbx_stop = tbx_map_stopbits(MODBUS_UART_STOPBITS);
-    int tbx_par = tbx_map_parity(MODBUS_UART_PARITY);
-    int tbx_baud = tbx_map_baudrate(MODBUS_BAUDRATE);
-
-    modbusTp = TbxMbRtuCreate(MODBUS_SLAVE_ID, tbx_port, tbx_baud, tbx_stop, tbx_par);
-    modbusServer = TbxMbServerCreate(modbusTp);
-  
-    /* регистрация application callbacks */
-    TbxMbServerSetCallbackReadCoil(modbusServer, ModbusReadCoil);
-    TbxMbServerSetCallbackWriteCoil(modbusServer, ModbusWriteCoil);
-}
-
-void modbusTask(void * pvParameters)
-{
-  TBX_UNUSED_ARG(pvParameters);
-
-  /* Enter infinite task loop. */
-  for (;;)
-  {
-    /* Continuously call the Modbus stack event task function. */
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); // LED ON
-    TbxMbEventTask();
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET); // LED OFF
-    taskYIELD();
-  }
-} /*** end of ModbusTask ***/

@@ -22,8 +22,10 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */
+#include "Modbus.h"
+#include "task.h"
 /* USER CODE END Includes */
-
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
 
@@ -57,6 +59,9 @@
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim4;
+/* USER CODE BEGIN EV */
+/* USER CODE BEGIN EV */
+/* USER CODE END EV */
 
 /* USER CODE BEGIN EV */
 
@@ -185,14 +190,66 @@ void TIM4_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-
-  /* USER CODE END USART3_IRQn 0 */
-  TbxMbPortUartInterrupt();
+	 /* USER CODE END USART3_IRQn 0 */
+	 HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */
 
   /* USER CODE END USART3_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
+
+/* USER CODE BEGIN 1 */
+
+/**
+  * @brief  Rx Transfer completed callback. This is a strong implementation that overrides the weak one from HAL.
+  * @param  huart: UART handle
+  * @retval None
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    // These are global in the Modbus library
+    extern modbusHandler_t *mHandlers[];
+    extern uint8_t numberHandlers;
+
+    // This code is copied from the Modbus library's UARTCallback.c
+    // It is necessary because of a linker issue where the weak HAL implementation is chosen over the library's strong one.
+    for (int i = 0; i < numberHandlers; i++)
+    {
+        if (mHandlers[i]->port == huart)
+        {
+            if(mHandlers[i]->xTypeHW == USART_HW)
+            {
+                // Log the received byte for debugging
+
+                RingAdd(&mHandlers[i]->xBufferRX, mHandlers[i]->dataRX);
+
+                HAL_UART_Receive_IT(mHandlers[i]->port, &mHandlers[i]->dataRX, 1);
+                xTimerResetFromISR(mHandlers[i]->xTimerT35, &xHigherPriorityTaskWoken);
+            }
+            break;
+        }
+    }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    extern modbusHandler_t *mHandlers[];
+    extern uint8_t numberHandlers;
+
+	for (int i = 0; i < numberHandlers; i++ )
+	{
+	   	if (mHandlers[i]->port == huart)
+	   	{
+	   		// notify the end of TX
+	   		xTaskNotifyFromISR(mHandlers[i]->myTaskModbusAHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+	   		break;
+	   	}
+	}
+	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+}
 
 /* USER CODE END 1 */

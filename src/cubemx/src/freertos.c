@@ -28,6 +28,7 @@
 #include "led_driver.h"
 #include "input_driver.h"
 #include "modbus_adapter.h"
+#include "modbus.h" // Для новой библиотеки
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,9 +48,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-TaskHandle_t led_task_handle;
-TaskHandle_t input_task_handle;
-TaskHandle_t modbus_task_handle;
+extern modbusHandler_t mHandler;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,9 +84,12 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* USER CODE BEGIN RTOS_THREADS */
-  xTaskCreate(led_task, "led_task", configMINIMAL_STACK_SIZE, &led_task_handle, 1, NULL);
-  xTaskCreate(input_task, "input_task", 128, &input_task_handle, 1, NULL);
-  xTaskCreate(modbusTask, "modbusTask", 512, &modbus_task_handle, 1, NULL);
+  xTaskCreate(led_task, "led_task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(input_task, "input_task", 128, NULL, 1, NULL);
+  /* StartTaskModbusSlave is created by the Modbus library in ModbusInit().
+    Avoid double-creating it here; call modbus_adapter_init() before scheduler start
+    so the library can create its own task. */
+  xTaskCreate(sync_task, "sync_task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

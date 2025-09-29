@@ -10,6 +10,7 @@
 #include "led_driver.h"
 #include "stm32f1xx.h"
 #include <stdio.h>
+#include "debug_uart.h"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -20,9 +21,6 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-extern TaskHandle_t led_task_handle;
-extern TaskHandle_t input_task_handle;
-extern TaskHandle_t modbus_task_handle;
 /* USER CODE END 0 */
 
 /**
@@ -47,19 +45,19 @@ int main(void)
   MX_GPIO_Init();        // CubeMX
   MX_TIM1_Init();        // CubeMX
   MX_USART3_UART_Init(); // CubeMX
-  
-  printf("ITM output test\n");
+  debug_uart_init();     // Инициализация отладочного UART
+
+  debug_uart_send_string("\r\n--- System Start ---\r\n");
+
   modbus_map_init();
   Input_Init();
   relay_init();
+  modbus_adapter_init();
   
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
   
   MX_FREERTOS_Init();
-  modbusAdapter_Init();
 
-  // Сигнал об успешном старте
-  led_signal_ack();
   
 
    /* Init scheduler */
@@ -121,11 +119,11 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
     int blink_count = 5; // По умолчанию 5 миганий для неизвестной задачи
 
-    if (xTask == led_task_handle) {
+    if (strcmp(pcTaskName, "led_task") == 0) {
         blink_count = 1;
-    } else if (xTask == input_task_handle) {
+    } else if (strcmp(pcTaskName, "input_task") == 0) {
         blink_count = 2;
-    } else if (xTask == modbus_task_handle) {
+    } else if (strcmp(pcTaskName, "modbus_slave") == 0) { // Имя задачи из новой библиотеки
         blink_count = 3;
     }
     // Задачу таймеров (Tmr Svc) нельзя получить так просто,

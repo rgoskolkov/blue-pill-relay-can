@@ -17,9 +17,6 @@
 
    Можно переопределить через build_flags (-D...) в platformio.ini
 */
-#ifndef MODBUS_UART_PORT
-#define MODBUS_UART_PORT 1
-#endif
 
 #ifndef MODBUS_UART_STOPBITS
 #define MODBUS_UART_STOPBITS 1
