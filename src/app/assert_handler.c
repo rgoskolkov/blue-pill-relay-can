@@ -1,12 +1,12 @@
 #include "main.h"
 #include <stdint.h>
+#include <stdio.h>
 
 volatile uint32_t g_assert_pc = 0;
 
 void configASSERT_Handler(uint32_t pc) {
     g_assert_pc = pc;
-    // Blink a distinct pattern: rapid triple blink, then pause
-    // Use HAL functions; this runs with interrupts disabled so be conservative.
+    printf("configASSERT_Handler at PC: %08lX\n", pc);
     for (;;) {
         HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
         for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");

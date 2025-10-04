@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 void Input_Init(void);
-void Input_Update(void);
-void input_task(void *argument);
+void process_switch_event(uint8_t i);
 
 #endif

@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <sys/times.h>
 #include "stm32f1xx.h"
+#include "board_config.h"
 
 
 /* Variables */
@@ -68,24 +69,34 @@ void _exit (int status)
 __attribute__((weak)) int _read(int file, char *ptr, int len)
 {
   (void)file;
-  int DataIdx;
-
-  for (DataIdx = 0; DataIdx < len; DataIdx++)
-  {
-    *ptr++ = __io_getchar();
-  }
-
-  return len;
+  #if UART1_DEBUG == 1
+    (void)ptr;
+    (void)len;
+    return -1;
+  #else
+    int DataIdx;
+    for (DataIdx = 0; DataIdx < len; DataIdx++)
+    {
+      *ptr++ = __io_getchar();
+    }
+    return len;
+  #endif
 }
 
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
-  (void)file;
-  for (int i = 0; i < len; i++)
-  {
-    ITM_SendChar(*ptr++);
-  }
-  return len;
+    (void)file;
+#if UART1_DEBUG == 1
+       HAL_UART_Transmit(&huart1, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+      return len; 
+#else
+      int DataIdx;
+      for (DataIdx = 0; DataIdx < len; DataIdx++)
+      {
+        __io_putchar(*ptr++);
+      }
+      return len;
+#endif
 }
 
 int _close(int file)

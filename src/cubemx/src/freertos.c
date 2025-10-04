@@ -28,7 +28,7 @@
 #include "led_driver.h"
 #include "input_driver.h"
 #include "modbus_adapter.h"
-#include "modbus.h" // Для новой библиотеки
+#include "Modbus.h" // Для новой библиотеки
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,8 +48,29 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-extern modbusHandler_t mHandler;
 /* USER CODE END Variables */
+
+const osThreadAttr_t ledTask_attributes = {
+  .name = "ledTask",
+  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+
+
+osThreadId_t syncTaskHandle;
+const osThreadAttr_t syncTask_attributes = {
+  .name = "syncTask",
+  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .priority = (osPriority_t) osPriorityLow5,
+};
+
+osThreadId_t diagTask;
+const osThreadAttr_t diagTask_attributes = {
+  .name = "diagTask",
+  .stack_size = configMINIMAL_STACK_SIZE * 8,
+  .priority = (osPriority_t) osPriorityLow1,
+};
+
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -84,13 +105,17 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* USER CODE BEGIN RTOS_THREADS */
-  xTaskCreate(led_task, "led_task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-  xTaskCreate(input_task, "input_task", 128, NULL, 1, NULL);
-  /* StartTaskModbusSlave is created by the Modbus library in ModbusInit().
-    Avoid double-creating it here; call modbus_adapter_init() before scheduler start
-    so the library can create its own task. */
-  xTaskCreate(sync_task, "sync_task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-  /* USER CODE END RTOS_THREADS */
+  osThreadNew(led_task, NULL, &ledTask_attributes);
+  syncTaskHandle = osThreadNew(sync_task, NULL, &syncTask_attributes);
+//  osThreadNew(modbus_diag_task, NULL, &diagTask_attributes);
+  // xTaskCreate(, "led_task", configMINIMAL_STACK_SIZE, NULL, 30, NULL);
+  // xTaskCreate(, "input_task", 128, NULL, 23, NULL);
+  // /* StartTaskModbusSlave is created by the Modbus library in ModbusInit().
+  //   Avoid double-creating it here; call modbus_adapter_init() before scheduler start
+  //   so the library can create its own task. */
+  // xTaskCreate(sync_task, "sync_task", 256, NULL, 26, NULL);
+  // xTaskCreate(modbus_diag_task, "diag_task", 512, NULL, 40, NULL);
+ /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */

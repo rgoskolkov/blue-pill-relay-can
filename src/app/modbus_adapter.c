@@ -5,9 +5,11 @@
 #include "relay_driver.h"
 #include "led_driver.h"
 #include "board_config.h"
-#include "cmsis_os2.h" // Используем CMSIS-RTOS v2 API для работы с семафором, предоставляемым Modbus
+#include "cmsis_os2.h"
 #include "stm32f1xx.h"
 #include "FreeRTOS.h"
+#include <stdio.h>
+#include "task.h"
 
 // --- Глобальные переменные ---
 modbusHandler_t mHandler;
@@ -36,23 +38,19 @@ void modbus_adapter_init(void)
 
 void sync_task(void *argument)
 {
+    uint32_t flags;
     uint16_t previous_coils_state = 0;
 
     for(;;)
     {
-        // Пытаемся захватить семафор, который защищает доступ к u16regs
-        // mHandler.ModBusSphrHandle — CMSIS-RTOS семафор, используем osSemaphoreAcquire
-        if (osSemaphoreAcquire(mHandler.ModBusSphrHandle, 10) == osOK)
-         {
-             uint16_t current_coils_state = usRegHolding[0];
+        flags = osThreadFlagsWait(FLAG_SYNC_FROM_RELAY | FLAG_SYNC_FROM_MODBUS, osFlagsWaitAny, osWaitForever);
 
-            // 1. ПРОВЕРКА ЗАПИСИ (Master -> Slave)
-            if (previous_coils_state != current_coils_state)
-            {
-                for (int i = 0; i < 8; i++)
-                {
-                    if ((previous_coils_state & (1 << i)) != (current_coils_state & (1 << i)))
-                    {
+        if (flags & FLAG_SYNC_FROM_MODBUS) {
+            uint16_t current_coils_state = usRegHolding[0];
+            if (previous_coils_state != current_coils_state) {
+                printf("Sync: master write %04X -> %04X\r\n", previous_coils_state, current_coils_state);
+                for (int i = 0; i < 8; i++) {
+                    if ((previous_coils_state & (1 << i)) != (current_coils_state & (1 << i))) {
                         if ((current_coils_state & (1 << i))) {
                             relay_on(i);
                         } else {
@@ -62,9 +60,10 @@ void sync_task(void *argument)
                 }
                 led_signal_ack();
             }
+        }
 
-            // 2. ОБНОВЛЕНИЕ ДЛЯ ЧТЕНИЯ (Slave -> Master)
-            uint16_t actual_state = 0;
+        if (flags & FLAG_SYNC_FROM_RELAY) {
+             uint16_t actual_state = 0;
             for (int i = 0; i < 8; i++) {
                 if (Relay_GetState(i)) {
                     actual_state |= (1 << i);
@@ -72,11 +71,98 @@ void sync_task(void *argument)
             }
             usRegHolding[0] = actual_state;
             previous_coils_state = actual_state;
-
-            // Используем CMSIS-RTOS v2 API, библиотека создала семафор через osSemaphoreNew
-            osSemaphoreRelease(mHandler.ModBusSphrHandle);
+        } else {
+            // Если флаг от реле не установлен, значит, мы обновили состояние реле из Modbus.
+            // В этом случае нам нужно обновить previous_coils_state, чтобы избежать
+            // ложного срабатывания при следующем уведомлении от Modbus.
+            previous_coils_state = usRegHolding[0];
         }
+    }
+}
+
+const char* taskStateToString(eTaskState state) {
+    switch(state) {
+        case eRunning:   return "Running";
+        case eReady:     return "Ready";
+        case eBlocked:   return "Blocked";
+        case eSuspended: return "Suspended";
+        case eDeleted:   return "Deleted";
+        case eInvalid:   return "Invalid";
+        default:         return "Unknown";
+    }
+}
+
+
+void monitor_timer_task_health(void) {
+    TaskHandle_t xTimerTask = xTimerGetTimerDaemonTaskHandle();
+    
+    if (xTimerTask == NULL) {
+        printf("TimerTask: NULL handle\r\n");
+        return;
+    }
+    
+    eTaskState task_state = eTaskGetState(xTimerTask);
+    TaskStatus_t task_info;
+    vTaskGetInfo(xTimerTask, &task_info, pdTRUE, eInvalid);
+    
+    printf("TimerTask: State=%s, StackWatermark=%u, Priority=%lu\r\n",
+            taskStateToString(task_state), task_info.usStackHighWaterMark, task_info.uxCurrentPriority);
+    
+    // Критические состояния
+    if (task_state == eBlocked) {
+        printf("ALERT: TimerTask is BLOCKED!\r\n");
+    }
+    if (task_info.usStackHighWaterMark < 50) {
+        printf("ALERT: TimerTask stack low!\r\n");
+    }
+}
+
+
+void system_monitor(void) {
+    
+  UBaseType_t task_count = uxTaskGetNumberOfTasks();
+  if (task_count <= 10)
+  {
+    unsigned long _total_runtime;
+    TaskStatus_t _buffer[task_count];
+
+    task_count = uxTaskGetSystemState(_buffer, task_count, &_total_runtime);
+
+    for (int task = 0; task < task_count; task++)
+    {
+    
+      printf("[DEBG] %20s: %s, %lu, %6u, %lu \r\n",
+                             _buffer[task].pcTaskName,
+                             taskStateToString(_buffer[task].eCurrentState),
+                             _buffer[task].uxCurrentPriority,
+                             _buffer[task].usStackHighWaterMark,
+                             _buffer[task].ulRunTimeCounter);
+    }
+    printf("[DEBG] Current Heap Free Size: %u \r\n",
+                           xPortGetFreeHeapSize());
+    //  printf("[DEBG] Timer Queue Count: %lu\r\n",
+    //               uxQueueMessagesWaiting(xTimerQueue));
+    
+    printf("[DEBG] Tick Count: %lu\r\n", (unsigned long)xTaskGetTickCount());
+    printf("[DEBG] Minimal Heap Free Size: %u \r\n",
+                          xPortGetMinimumEverFreeHeapSize());
+ // printf("[DEBG] Total RunTime:  %lu ms", _total_runtime); // _total_runtime needs to be long unsigned
+    // printf("[DEBG] System Uptime:  %lu ms\r\n",
+ // 			      xTaskGetTickCount() * portTICK_PERIOD_MS);
+  }
+}
+
+void modbus_diag_task(void *argument)
+{
+    uint32_t last_irq_count = 0;
+    for(;;)
+    {
+        vTaskDelay(pdMS_TO_TICKS(7000));
+        system_monitor();
         
-        vTaskDelay(pdMS_TO_TICKS(50));
+        if (usart3_irq_count != last_irq_count) {
+            printf("Diag: IRQ count: %lu, last error: %d, state: %d\r\n", usart3_irq_count, mHandler.i8lastError, mHandler.i8state);
+            last_irq_count = usart3_irq_count;
+        }
     }
 }

@@ -32,72 +32,54 @@ void Input_Init(void)
     memset(switch_state, 0, sizeof(switch_state));
 }
 
-void Input_Update(void)
+// Array to map switch index to GPIO Port
+static GPIO_TypeDef* const switch_ports[NUM_SWITCHES] = {
+    SWITCH1_GPIO_Port, SWITCH2_GPIO_Port, SWITCH3_GPIO_Port, SWITCH4_GPIO_Port,
+    SWITCH5_GPIO_Port, SWITCH6_GPIO_Port, SWITCH7_GPIO_Port, SWITCH8_GPIO_Port
+};
+
+// Array to map switch index to GPIO Pin
+static const uint16_t switch_pins[NUM_SWITCHES] = {
+    SWITCH1_Pin, SWITCH2_Pin, SWITCH3_Pin, SWITCH4_Pin,
+    SWITCH5_Pin, SWITCH6_Pin, SWITCH7_Pin, SWITCH8_Pin
+};
+
+void process_switch_event(uint8_t i)
 {
+    if (i >= NUM_SWITCHES) return;
+
     uint32_t now = HAL_GetTick();
-    printf("Input_Update at %lu\n", now);
 
-    for (uint8_t i = 0; i < NUM_SWITCHES; ++i)
+    if (!debounce_check(i)) {
+        return;
+    }
+    
+    GPIO_TypeDef* port = switch_ports[i];
+    uint16_t pin = switch_pins[i];
+    uint8_t current_state = (HAL_GPIO_ReadPin(port, pin) == GPIO_PIN_SET) ? 0u : 1u;
+
+    printf("Switch %d interrupt, state: %d\n", i, current_state);
+
+    last_event_ts[i] = now;
+
+    if (current_state == 1) // Нажатие (переход в LOW)
     {
-        GPIO_TypeDef *port;
-        uint16_t pin;
-
-        switch (i)
+        press_start_ts[i] = now;
+        // Мгновенное переключение
+        switch_state[i] = !switch_state[i];
+        led_signal_ack();
+        modbus_map_update_switch(i, switch_state[i]);
+    }
+    else // Отпускание (переход в HIGH)
+    {
+        uint32_t press_duration = now - press_start_ts[i];
+        if (press_duration >= LONG_PRESS_TIME_MS)
         {
-            case 0: port = SWITCH1_GPIO_Port; pin = SWITCH1_Pin; break;
-            case 1: port = SWITCH2_GPIO_Port; pin = SWITCH2_Pin; break;
-            case 2: port = SWITCH3_GPIO_Port; pin = SWITCH3_Pin; break;
-            case 3: port = SWITCH4_GPIO_Port; pin = SWITCH4_Pin; break;
-            case 4: port = SWITCH5_GPIO_Port; pin = SWITCH5_Pin; break;
-            case 5: port = SWITCH6_GPIO_Port; pin = SWITCH6_Pin; break;
-            case 6: port = SWITCH7_GPIO_Port; pin = SWITCH7_Pin; break;
-            case 7: port = SWITCH8_GPIO_Port; pin = SWITCH8_Pin; break;
-            default: continue;
-        }
-
-        uint8_t current_state = (HAL_GPIO_ReadPin(port, pin) == GPIO_PIN_SET) ? 0u : 1u;
-        printf("Switch %d: %d\n", i, current_state);
-
-        if (current_state != prev_states[i])
-        {
-            printf("Switch %d state changed\n", i);
-            if (!debounce_check(i)) continue;
-            printf("Switch %d debounce passed\n", i);
-            
-            last_event_ts[i] = now;
-            prev_states[i] = current_state;
-
-            if (current_state == 1) // Переход в LOW (нажатие)
-            {
-                press_start_ts[i] = now;
-                
-                // Мгновенно переключаем состояние
-                switch_state[i] = !switch_state[i];
-                led_signal_ack();
-                modbus_map_update_switch(i, switch_state[i]);
-            }
-            else // Переход в HIGH (отпускание)
-            {
-                // Проверяем длительность нажатия
-                uint32_t press_duration = now - press_start_ts[i];
-                
-                if (press_duration >= LONG_PRESS_TIME_MS)
-                {
-                    // Долгое нажатие - отменяем действие
-                    switch_state[i] = !switch_state[i];
-                    led_signal_ack();
-                    modbus_map_update_switch(i, switch_state[i]);
-                }
-            }
+            // Долгое нажатие - отменяем действие
+            switch_state[i] = !switch_state[i];
+            led_signal_ack();
+            modbus_map_update_switch(i, switch_state[i]);
         }
     }
-}
-
-void input_task(void *argument)
-{
-    for(;;)
-    {
-        Input_Update();
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
+    prev_states[i] = current_state;
 }

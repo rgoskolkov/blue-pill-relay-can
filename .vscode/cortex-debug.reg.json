@@ -1,0 +1,13 @@
+{
+    "RTOS": {
+        "type": "FreeRTOS",
+        "symbolics": {
+            "pxCurrentTCB": "0x20000c60",
+            "pxReadyTasksLists": "0x20000000",
+            "xDelayedTaskList1": "0x20000000",
+            "xDelayedTaskList2": "0x20000000",
+            "pxDelayedTaskList": "0x20000000",
+            "pxOverflowDelayedTaskList": "0x20000000"
+        }
+    }
+}

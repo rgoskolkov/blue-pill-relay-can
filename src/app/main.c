@@ -10,8 +10,6 @@
 #include "led_driver.h"
 #include "stm32f1xx.h"
 #include <stdio.h>
-#include "debug_uart.h"
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
@@ -45,32 +43,30 @@ int main(void)
   MX_GPIO_Init();        // CubeMX
   MX_TIM1_Init();        // CubeMX
   MX_USART3_UART_Init(); // CubeMX
-  debug_uart_init();     // Инициализация отладочного UART
-
-  debug_uart_send_string("\r\n--- System Start ---\r\n");
-
+  MX_USART1_UART_Init();
   modbus_map_init();
   Input_Init();
   relay_init();
   modbus_adapter_init();
   
+  /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  
   MX_FREERTOS_Init();
 
-  
-
-   /* Init scheduler */
-  osKernelStart();
   /* Start scheduler */
+  osKernelStart();
  
   /* We should never get here as control is now taken by the scheduler */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /* USER CODE END WHILE */
 
+    /* USER CODE BEGIN 3 */
   }
+  /* USER CODE END 3 */
 }
 
 /**
@@ -117,13 +113,13 @@ void SystemClock_Config(void)
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
+    printf("vApplicationStackOverflowHook: %s\n", pcTaskName);
+
     int blink_count = 5; // По умолчанию 5 миганий для неизвестной задачи
 
     if (strcmp(pcTaskName, "led_task") == 0) {
         blink_count = 1;
-    } else if (strcmp(pcTaskName, "input_task") == 0) {
-        blink_count = 2;
-    } else if (strcmp(pcTaskName, "modbus_slave") == 0) { // Имя задачи из новой библиотеки
+    } else if (strcmp(pcTaskName, "TaskModbusSlave") == 0) { // Имя задачи из новой библиотеки
         blink_count = 3;
     }
     // Задачу таймеров (Tmr Svc) нельзя получить так просто,
@@ -145,10 +141,11 @@ void vApplicationMallocFailedHook(void)
 {
    /* This function will be called if a call to pvPortMalloc() fails. */
    /* Blink fast pattern for malloc failed */
+   printf("vApplicationMallocFailedHook\n");
    for(;;)
    {
       HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(50);
+      HAL_Delay(500);
    }
 }
 /* USER CODE END 4 */
@@ -183,6 +180,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  printf("Error_Handler\n");
   __disable_irq();
   while (1)
   {

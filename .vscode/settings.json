@@ -8,5 +8,7 @@
     "editor.formatOnSave": false,
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "cortex-debug.armToolchainPath": "${env:HOME}/.platformio/packages/toolchain-gccarmnoneeabi/bin",
+    "cortex-debug.gdbPath": "${env:HOME}/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gdb"
 }

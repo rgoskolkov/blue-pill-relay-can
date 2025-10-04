@@ -3,6 +3,7 @@
 #include "board_config.h"
 #include "stm32f1xx_hal.h"
 #include <string.h>
+#include "modbus_adapter.h"
 
 static uint8_t relay_states_local[NUM_SWITCHES];
 
@@ -30,6 +31,11 @@ static void Relay_SetState(uint8_t relay_number, uint8_t state)
     relay_states_local[relay_number] = state ? 1 : 0;
     HAL_GPIO_WritePin(relay_ports[relay_number], relay_pins[relay_number],
                       state ? GPIO_PIN_RESET : GPIO_PIN_SET);
+
+    if (syncTaskHandle != NULL)
+    {
+        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_RELAY);
+    }
 }
 
 uint8_t Relay_GetState(uint8_t relay_number)

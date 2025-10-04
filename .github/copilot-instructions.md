@@ -66,10 +66,10 @@ If something is unclear or you need more depth (e.g., Modbus library API details
 
 Ипользуемые программные компоненты:
     Библиотеки (middleware):
-        a. Библиотека для работы с протоколом Modbus RTU https://github.com/feaser/microtbx-modbus.git#v1.0.0
+        a. Библиотека для работы с протоколом Modbus RTU https://github.com/alejoseb/Modbus-STM32-HAL-FreeRTOS0.0
         b. FreeRTOS для параллельного фунционирования различных задач (heap4)
         c. HAL для управления MCU
     ПО CubeMx для конфигурации платы и генерации кода
     ПО VSCode с плагином Platformio для разработки логики, сборки, заливки проекта на железо, и отладки
 Структура кода:
-    Все задачи, очереди, и прочее что связано с FreeRTOS задается в freertos.c
+    Все задачи, очереди, и прочее что связано с FreeRTOS задается в файле freertos.c

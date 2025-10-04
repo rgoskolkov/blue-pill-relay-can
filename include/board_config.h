@@ -47,6 +47,10 @@
 #define MODBUS_UART_PARITY 0
 #endif
 
+#ifndef UART1_DEBUG
+#define UART1_DEBUG 0
+#endif
+
 /* DEBOUNCE_MS — интервал дебаунса для механических переключателей в миллисекундах.
    Назначение: фильтрация механического дребезга контактов перед генерацией события.
    Как задать:
@@ -57,7 +61,7 @@
    По умолчанию установлен 50 ms — разумное значение для большинства кнопок.
 */
 #ifndef DEBOUNCE_MS
-#define DEBOUNCE_MS 50U
+#define DEBOUNCE_MS 100U
 #endif
 
 /* Relay pins (берутся напрямую из main.h) */
