@@ -16,8 +16,6 @@ modbusHandler_t mHandler;
 // 1 регистр для хранения состояния 8 коилов
 uint16_t usRegHolding[1] = {0}; 
 
-// forward declaration for diagnostic task
-void modbus_diag_task(void *argument);
 /* Diagnostic IRQ counter exported from ISR file */
 extern volatile uint32_t usart3_irq_count;
 
@@ -48,7 +46,7 @@ void sync_task(void *argument)
         if (flags & FLAG_SYNC_FROM_MODBUS) {
             uint16_t current_coils_state = usRegHolding[0];
             if (previous_coils_state != current_coils_state) {
-                printf("Sync: master write %04X -> %04X\r\n", previous_coils_state, current_coils_state);
+                //printf("Sync: master write %04X -> %04X\r\n", previous_coils_state, current_coils_state);
                 for (int i = 0; i < 8; i++) {
                     if ((previous_coils_state & (1 << i)) != (current_coils_state & (1 << i))) {
                         if ((current_coils_state & (1 << i))) {
@@ -76,93 +74,6 @@ void sync_task(void *argument)
             // В этом случае нам нужно обновить previous_coils_state, чтобы избежать
             // ложного срабатывания при следующем уведомлении от Modbus.
             previous_coils_state = usRegHolding[0];
-        }
-    }
-}
-
-const char* taskStateToString(eTaskState state) {
-    switch(state) {
-        case eRunning:   return "Running";
-        case eReady:     return "Ready";
-        case eBlocked:   return "Blocked";
-        case eSuspended: return "Suspended";
-        case eDeleted:   return "Deleted";
-        case eInvalid:   return "Invalid";
-        default:         return "Unknown";
-    }
-}
-
-
-void monitor_timer_task_health(void) {
-    TaskHandle_t xTimerTask = xTimerGetTimerDaemonTaskHandle();
-    
-    if (xTimerTask == NULL) {
-        printf("TimerTask: NULL handle\r\n");
-        return;
-    }
-    
-    eTaskState task_state = eTaskGetState(xTimerTask);
-    TaskStatus_t task_info;
-    vTaskGetInfo(xTimerTask, &task_info, pdTRUE, eInvalid);
-    
-    printf("TimerTask: State=%s, StackWatermark=%u, Priority=%lu\r\n",
-            taskStateToString(task_state), task_info.usStackHighWaterMark, task_info.uxCurrentPriority);
-    
-    // Критические состояния
-    if (task_state == eBlocked) {
-        printf("ALERT: TimerTask is BLOCKED!\r\n");
-    }
-    if (task_info.usStackHighWaterMark < 50) {
-        printf("ALERT: TimerTask stack low!\r\n");
-    }
-}
-
-
-void system_monitor(void) {
-    
-  UBaseType_t task_count = uxTaskGetNumberOfTasks();
-  if (task_count <= 10)
-  {
-    unsigned long _total_runtime;
-    TaskStatus_t _buffer[task_count];
-
-    task_count = uxTaskGetSystemState(_buffer, task_count, &_total_runtime);
-
-    for (int task = 0; task < task_count; task++)
-    {
-    
-      printf("[DEBG] %20s: %s, %lu, %6u, %lu \r\n",
-                             _buffer[task].pcTaskName,
-                             taskStateToString(_buffer[task].eCurrentState),
-                             _buffer[task].uxCurrentPriority,
-                             _buffer[task].usStackHighWaterMark,
-                             _buffer[task].ulRunTimeCounter);
-    }
-    printf("[DEBG] Current Heap Free Size: %u \r\n",
-                           xPortGetFreeHeapSize());
-    //  printf("[DEBG] Timer Queue Count: %lu\r\n",
-    //               uxQueueMessagesWaiting(xTimerQueue));
-    
-    printf("[DEBG] Tick Count: %lu\r\n", (unsigned long)xTaskGetTickCount());
-    printf("[DEBG] Minimal Heap Free Size: %u \r\n",
-                          xPortGetMinimumEverFreeHeapSize());
- // printf("[DEBG] Total RunTime:  %lu ms", _total_runtime); // _total_runtime needs to be long unsigned
-    // printf("[DEBG] System Uptime:  %lu ms\r\n",
- // 			      xTaskGetTickCount() * portTICK_PERIOD_MS);
-  }
-}
-
-void modbus_diag_task(void *argument)
-{
-    uint32_t last_irq_count = 0;
-    for(;;)
-    {
-        vTaskDelay(pdMS_TO_TICKS(7000));
-        system_monitor();
-        
-        if (usart3_irq_count != last_irq_count) {
-            printf("Diag: IRQ count: %lu, last error: %d, state: %d\r\n", usart3_irq_count, mHandler.i8lastError, mHandler.i8state);
-            last_irq_count = usart3_irq_count;
         }
     }
 }

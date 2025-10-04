@@ -28,7 +28,8 @@
 #include "led_driver.h"
 #include "input_driver.h"
 #include "modbus_adapter.h"
-#include "Modbus.h" // Для новой библиотеки
+#include "system_monitor.h"
+#include "board_config.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,7 +53,7 @@
 
 const osThreadAttr_t ledTask_attributes = {
   .name = "ledTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .stack_size = configMINIMAL_STACK_SIZE * 6,
   .priority = (osPriority_t) osPriorityLow,
 };
 
@@ -60,13 +61,13 @@ const osThreadAttr_t ledTask_attributes = {
 osThreadId_t syncTaskHandle;
 const osThreadAttr_t syncTask_attributes = {
   .name = "syncTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .stack_size = configMINIMAL_STACK_SIZE * 6,
   .priority = (osPriority_t) osPriorityLow5,
 };
 
-osThreadId_t diagTask;
-const osThreadAttr_t diagTask_attributes = {
-  .name = "diagTask",
+osThreadId_t monitorTaskHandle;
+const osThreadAttr_t monitorTask_attributes = {
+  .name = "monitorTask",
   .stack_size = configMINIMAL_STACK_SIZE * 8,
   .priority = (osPriority_t) osPriorityLow1,
 };
@@ -107,7 +108,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   osThreadNew(led_task, NULL, &ledTask_attributes);
   syncTaskHandle = osThreadNew(sync_task, NULL, &syncTask_attributes);
-//  osThreadNew(modbus_diag_task, NULL, &diagTask_attributes);
+  #if MONITOR_TASK == 1
+    osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
+  #endif  
   // xTaskCreate(, "led_task", configMINIMAL_STACK_SIZE, NULL, 30, NULL);
   // xTaskCreate(, "input_task", 128, NULL, 23, NULL);
   // /* StartTaskModbusSlave is created by the Modbus library in ModbusInit().

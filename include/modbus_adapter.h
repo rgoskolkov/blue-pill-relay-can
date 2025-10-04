@@ -10,6 +10,5 @@ extern osThreadId_t syncTaskHandle;
 
 void modbus_adapter_init(void);
 void sync_task(void *argument);
-void modbus_diag_task(void *argument);
 
 #endif // MODBUS_ADAPTER_H

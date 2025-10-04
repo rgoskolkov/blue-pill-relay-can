@@ -16,6 +16,7 @@
 #include "semphr.h"
 #include <stdio.h>
 #include "modbus_adapter.h"
+#include "led_driver.h"
 
 
 
@@ -50,7 +51,7 @@ const osMessageQueueAttr_t QueueTelegram_attributes = {
 const osThreadAttr_t myTaskModbusA_attributes = {
     .name = "TaskModbusSlave",
     .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 128 * 4
+    .stack_size = 256 * 4
 };
 
 const osThreadAttr_t myTaskModbusA_attributesTCP = {
@@ -739,6 +740,10 @@ void StartTaskModbusSlave(void *argument)
 
 		continue;
 	}
+	
+	   // Если мы здесь, значит, запрос от мастера корректен.
+	   // Это лучшее место, чтобы сообщить, что связь жива.
+	   led_signal_heartbeat();
 
 	modH->i8lastError = 0;
 	   //printf("MDB: taking sphr\r\n");

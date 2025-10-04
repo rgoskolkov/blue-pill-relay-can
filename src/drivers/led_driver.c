@@ -2,64 +2,95 @@
 #include "main.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include <limits.h> // Для ULONG_MAX
 
+// --- Определения для управления светодиодом ---
 #define LED_ON() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET)
 #define LED_OFF() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET)
 
-#define HEARTBEAT_PERIOD_MS 10000 
-#define TASK_LOOP_DELAY_MS 100    
+// --- Определения событий для уведомлений задачи ---
+#define LED_EVENT_ACK       (1 << 0) // Событие: подтверждение команды
+#define LED_EVENT_HEARTBEAT (1 << 1) // Событие: сигнал о работе Modbus
 
-// --- Глобальные флаги/счетчики ---
-static volatile uint8_t g_ack_signal_flag = 0;
+// --- Статические переменные ---
+static TaskHandle_t led_task_handle = NULL;
 static volatile TickType_t g_last_heartbeat_tick = 0;
-
+const TickType_t HEARTBEAT_TIMEOUT_TICKS = pdMS_TO_TICKS(15000); // 15 секунд
 
 // --- Публичные функции ---
 
 void led_signal_ack(void) {
-    g_ack_signal_flag = 1;
+    if (led_task_handle != NULL) {
+        xTaskNotify(led_task_handle, LED_EVENT_ACK, eSetBits);
+    }
 }
 
 void led_signal_heartbeat(void) {
     g_last_heartbeat_tick = xTaskGetTickCount();
+    if (led_task_handle != NULL) {
+        // Это уведомление просто разбудит задачу для проверки, если она спит
+        xTaskNotify(led_task_handle, LED_EVENT_HEARTBEAT, eSetBits);
+    }
 }
-
 
 // --- Основная задача ---
 
 void led_task(void *argument) {
-    TickType_t next_heartbeat_time = 0;
+    led_task_handle = xTaskGetCurrentTaskHandle();
+    uint32_t notified_value;
+    TickType_t next_heartbeat_display_time = 0;
 
-    // Сигнал о старте
+    // Сигнал о старте системы
     led_signal_ack();
 
     for (;;) {
-        // 1. Приоритет: Сигнал ACK (старт или выполнение команды)
-        if (g_ack_signal_flag) {
-            g_ack_signal_flag = 0; // Сбрасываем флаг
-            for (uint8_t i = 0; i < 3; i++) {
-                LED_ON();
-                vTaskDelay(pdMS_TO_TICKS(100));
-                LED_OFF();
-                vTaskDelay(pdMS_TO_TICKS(100));
-            }
-            continue; // Пропускаем остаток цикла, чтобы не было ложного хартбита
+        // Ожидаем уведомления. Выходим по таймауту, чтобы проверить heartbeat.
+        // Таймаут равен времени до следующего отображения heartbeat.
+        TickType_t now = xTaskGetTickCount();
+        TickType_t timeout;
+
+        if (next_heartbeat_display_time > now) {
+            timeout = next_heartbeat_display_time - now;
+        } else {
+            // Если время уже прошло, ждем следующего события бесконечно.
+            // Это не даст задаче зациклиться в состоянии Ready.
+            // Проверка heartbeat ниже все равно выполнится.
+            timeout = portMAX_DELAY;
         }
         
-        // 2. Низкий приоритет: Heartbeat
-        TickType_t now = xTaskGetTickCount();
-        if (now >= next_heartbeat_time) {
-            // Если пора показать heartbeat и есть свежий сигнал с Modbus
-            if ((now - g_last_heartbeat_tick) < pdMS_TO_TICKS(HEARTBEAT_PERIOD_MS)) {
+        BaseType_t result = xTaskNotifyWait(0x00,          // Не сбрасывать биты при входе
+                                          ULONG_MAX,     // Сбрасывать все биты при выходе
+                                          &notified_value, // Переменная для хранения уведомления
+                                          timeout);      // Таймаут
+
+        now = xTaskGetTickCount(); // Обновляем время после пробуждения
+
+        if (result == pdPASS) { // Если проснулись по уведомлению
+            // 1. Приоритет: Сигнал ACK
+            if (notified_value & LED_EVENT_ACK) {
+                for (uint8_t i = 0; i < 3; i++) {
+                    LED_ON();
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                    LED_OFF();
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                }
+                // После ACK лучше пересчитать время следующего heartbeat,
+                // чтобы избежать слишком частого мигания
+                next_heartbeat_display_time = now + HEARTBEAT_TIMEOUT_TICKS;
+                continue; // Начинаем цикл ожидания заново
+            }
+        }
+        
+        // 2. Heartbeat (проверяется после таймаута или после любого события)
+        if (now >= next_heartbeat_display_time) {
+            // Если с момента последнего сигнала по Modbus прошло не много времени
+            if ((now - g_last_heartbeat_tick) < HEARTBEAT_TIMEOUT_TICKS) {
                 LED_ON();
-                vTaskDelay(pdMS_TO_TICKS(1000)); // Длинное мигание
+                vTaskDelay(pdMS_TO_TICKS(500)); // Среднее мигание
                 LED_OFF();
             }
-            // Планируем следующий heartbeat не раньше, чем через 5 секунд
-            next_heartbeat_time = now + pdMS_TO_TICKS(HEARTBEAT_PERIOD_MS);
+            // Планируем следующий heartbeat
+            next_heartbeat_display_time = now + HEARTBEAT_TIMEOUT_TICKS;
         }
-
-        // Короткая пауза, чтобы задача не блокировала CPU и была отзывчивой
-        vTaskDelay(pdMS_TO_TICKS(TASK_LOOP_DELAY_MS));
     }
 }
