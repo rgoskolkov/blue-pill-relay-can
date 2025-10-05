@@ -7,8 +7,6 @@
 
 // Эти переменные должны быть доступны из других модулей
 extern modbusHandler_t mHandler;
-extern volatile uint32_t usart3_irq_count;
-uint32_t last_irq_count = 0;
 
 const char* taskStateToString(eTaskState state) {
     switch(state) {
@@ -63,15 +61,6 @@ void system_monitor(void) {
     if (written > 0) {
         p += written;
         len -= written;
-    }
-
-    if (usart3_irq_count != last_irq_count) {
-      written = snprintf(p, len, "Diag: IRQ count: %lu, last error: %d, state: %d\r\n", usart3_irq_count, mHandler.i8lastError, mHandler.i8state);
-      if (written > 0) {
-        p += written;
-        len -= written;
-      }
-      last_irq_count = usart3_irq_count;
     }
 
     printf("%s", buffer);

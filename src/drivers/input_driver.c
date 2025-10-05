@@ -4,11 +4,8 @@
 #include "board_config.h"
 #include "stm32f1xx_hal.h"
 #include <string.h>
-#include <stdbool.h>
 #include "led_driver.h"
 #include <stdio.h>
-#include "FreeRTOS.h"
-#include "task.h"
 
 #define LONG_PRESS_TIME_MS 2000
 
@@ -82,4 +79,22 @@ void process_switch_event(uint8_t i)
         }
     }
     prev_states[i] = current_state;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    uint8_t switch_index = 0;
+    switch(GPIO_Pin)
+    {
+        case SWITCH1_Pin: switch_index = 0; break;
+        case SWITCH2_Pin: switch_index = 1; break;
+        case SWITCH3_Pin: switch_index = 2; break;
+        case SWITCH4_Pin: switch_index = 3; break;
+        case SWITCH5_Pin: switch_index = 4; break;
+        case SWITCH6_Pin: switch_index = 5; break;
+        case SWITCH7_Pin: switch_index = 6; break;
+        case SWITCH8_Pin: switch_index = 7; break;
+        default: return; // Not a switch pin
+    }
+    process_switch_event(switch_index);
 }

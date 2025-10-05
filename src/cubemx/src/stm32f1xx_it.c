@@ -23,10 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE BEGIN Includes */
-#include "Modbus.h"
-#include "task.h"
 #include <stdio.h>
-#include "input_driver.h"
 /* USER CODE END Includes */
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -45,8 +42,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
-volatile uint32_t usart3_irq_count = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -149,9 +144,9 @@ void HardFault_Handler(void)
     // Вечный цикл с миганием
     while(1) {
         HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-        HAL_Delay(200);
+        HAL_Delay(700);
         HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-        HAL_Delay(200);
+        HAL_Delay(700);
     }
 }
 
@@ -318,7 +313,6 @@ void TIM4_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-  usart3_irq_count++;
 	 /* USER CODE END USART3_IRQn 0 */
 	HAL_UART_IRQHandler(&huart3);
 	 /* USER CODE BEGIN USART3_IRQn 1 */
@@ -327,74 +321,5 @@ void USART3_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    uint8_t switch_index = 0;
-    switch(GPIO_Pin)
-    {
-        case SWITCH1_Pin: switch_index = 0; break;
-        case SWITCH2_Pin: switch_index = 1; break;
-        case SWITCH3_Pin: switch_index = 2; break;
-        case SWITCH4_Pin: switch_index = 3; break;
-        case SWITCH5_Pin: switch_index = 4; break;
-        case SWITCH6_Pin: switch_index = 5; break;
-        case SWITCH7_Pin: switch_index = 6; break;
-        case SWITCH8_Pin: switch_index = 7; break;
-        default: return; // Not a switch pin
-    }
-    process_switch_event(switch_index);
-}
-
-
-/**
-  * @brief  Rx Transfer completed callback. This is a strong implementation that overrides the weak one from HAL.
-  * @param  huart: UART handle
-  * @retval None
-  */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    extern modbusHandler_t *mHandlers[];
-    extern uint8_t numberHandlers;
-    //printf("rx callback\r\n");
-    for (int i = 0; i < numberHandlers; i++) {
-        if (mHandlers[i]->port == huart && mHandlers[i]->xTypeHW == USART_HW) {
-            RingAdd(&mHandlers[i]->xBufferRX, mHandlers[i]->dataRX);
-            HAL_UART_Receive_IT(mHandlers[i]->port, &mHandlers[i]->dataRX, 1);
-            
-            TimerHandle_t xTimer = mHandlers[i]->xTimerT35;
-                BaseType_t timer_result = xTimerResetFromISR(xTimer, &xHigherPriorityTaskWoken);
-                
-                if (timer_result != pdPASS) {
-                    // ДЕТАЛЬНАЯ ДИАГНОСТИКА ПРИ ОШИБКЕ
-                    //char detail_msg[128];
-                    // snprintf(detail_msg, sizeof(detail_msg),
-                    //         "TIMER FAIL: TimerActive=%d\r\n", (int)xTimerIsTimerActive(xTimer));
-                     printf("Timer reset FAIL");
-                } else {
-                   //printf("Timer reseted");
-                }
-            break;
-        }
-    }
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    extern modbusHandler_t *mHandlers[];
-    extern uint8_t numberHandlers;
-
-	for (int i = 0; i < numberHandlers; i++ )
-	{
-	   	if (mHandlers[i]->port == huart)
-	   	{
-	   		// notify the end of TX
-	   		xTaskNotifyFromISR(mHandlers[i]->myTaskModbusAHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-	   		break;
-	   	}
-	}
-	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
-}
 
 /* USER CODE END 1 */

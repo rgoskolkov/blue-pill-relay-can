@@ -28,7 +28,7 @@ void modbus_adapter_init(void)
     mHandler.EN_Port = NULL;
     mHandler.xTypeHW = USART_HW;
     mHandler.u16regs = usRegHolding;
-    mHandler.u16regsize = 8; // Увеличим, чтобы покрыть все запросы от HA
+    mHandler.u16regsize = 8;
 
     ModbusInit(&mHandler);
     ModbusStart(&mHandler);
@@ -46,7 +46,6 @@ void sync_task(void *argument)
         if (flags & FLAG_SYNC_FROM_MODBUS) {
             uint16_t current_coils_state = usRegHolding[0];
             if (previous_coils_state != current_coils_state) {
-                //printf("Sync: master write %04X -> %04X\r\n", previous_coils_state, current_coils_state);
                 for (int i = 0; i < 8; i++) {
                     if ((previous_coils_state & (1 << i)) != (current_coils_state & (1 << i))) {
                         if ((current_coils_state & (1 << i))) {
@@ -58,6 +57,7 @@ void sync_task(void *argument)
                 }
                 led_signal_ack();
             }
+            previous_coils_state = current_coils_state;
         }
 
         if (flags & FLAG_SYNC_FROM_RELAY) {
@@ -69,11 +69,46 @@ void sync_task(void *argument)
             }
             usRegHolding[0] = actual_state;
             previous_coils_state = actual_state;
-        } else {
-            // Если флаг от реле не установлен, значит, мы обновили состояние реле из Modbus.
-            // В этом случае нам нужно обновить previous_coils_state, чтобы избежать
-            // ложного срабатывания при следующем уведомлении от Modbus.
-            previous_coils_state = usRegHolding[0];
         }
     }
+}
+
+/**
+  * @brief  Rx Transfer completed callback. This is a strong implementation that overrides the weak one from HAL.
+  * @param  huart: UART handle
+  * @retval None
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    extern modbusHandler_t *mHandlers[];
+    extern uint8_t numberHandlers;
+    for (int i = 0; i < numberHandlers; i++) {
+        if (mHandlers[i]->port == huart && mHandlers[i]->xTypeHW == USART_HW) {
+            RingAdd(&mHandlers[i]->xBufferRX, mHandlers[i]->dataRX);
+            HAL_UART_Receive_IT(mHandlers[i]->port, &mHandlers[i]->dataRX, 1);
+            if (xTimerResetFromISR(mHandlers[i]->xTimerT35, &xHigherPriorityTaskWoken) != pdPASS) {
+                printf("Timer reset FAIL");
+            }
+            break;
+        }
+    }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    extern modbusHandler_t *mHandlers[];
+    extern uint8_t numberHandlers;
+
+	for (int i = 0; i < numberHandlers; i++ )
+	{
+	   	if (mHandlers[i]->port == huart)
+	   	{
+	   		// notify the end of TX
+	   		xTaskNotifyFromISR(mHandlers[i]->myTaskModbusAHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+	   		break;
+	   	}
+	}
+	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }

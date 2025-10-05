@@ -1,20 +1,5 @@
 /*
   board_config.h
-
-  Требования: main.h (сгенерированный CubeMX) должен содержать определения:
-    SWITCH1_Pin..SWITCH8_Pin
-    SWITCH1_GPIO_Port..SWITCH8_GPIO_Port
-    RELAY1_Pin..RELAY8_Pin
-    RELAY1_GPIO_Port..RELAY8_GPIO_Port
-
-  Этот файл не пытается подменять пины — если main.h отсутствует или
-  не содержит перечисленных символов, сборка упадёт с ошибкой.
-
-  Modbus UART configuration (человеческие значения):
-   MODBUS_UART_PORT      : 1 or 2 (UART1 / UART2)
-   MODBUS_UART_STOPBITS  : 1 or 2
-   MODBUS_UART_PARITY    : 0 = none, 1 = odd, 2 = even
-
    Можно переопределить через build_flags (-D...) в platformio.ini
 */
 
@@ -65,7 +50,7 @@
    По умолчанию установлен 50 ms — разумное значение для большинства кнопок.
 */
 #ifndef DEBOUNCE_MS
-#define DEBOUNCE_MS 100U
+#define DEBOUNCE_MS 300U
 #endif
 
 /* Relay pins (берутся напрямую из main.h) */

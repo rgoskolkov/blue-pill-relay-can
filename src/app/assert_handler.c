@@ -2,10 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-volatile uint32_t g_assert_pc = 0;
-
 void configASSERT_Handler(uint32_t pc) {
-    g_assert_pc = pc;
     printf("configASSERT_Handler at PC: %08lX\n", pc);
     for (;;) {
         HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
