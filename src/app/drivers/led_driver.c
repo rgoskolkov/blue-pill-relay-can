@@ -5,8 +5,8 @@
 #include "board_config.h"
 
 // --- Определения для управления светодиодом ---
-#define LED_ON() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET)
-#define LED_OFF() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET)
+#define LED_ON() Board_LED_On()
+#define LED_OFF() Board_LED_Off()
 
 // --- Определения событий для уведомлений задачи ---
 #define LED_EVENT_ACK       (1 << 0) // Событие: подтверждение команды
@@ -24,11 +24,11 @@ void dead_hand(uint32_t delay, uint32_t count){
     {
         for (int i=0; i < count; i++) {
             LED_ON();
-            HAL_Delay(delay);
+            Board_Delay(delay);
             LED_OFF();
-            HAL_Delay(delay);
+            Board_Delay(delay);
         }
-        HAL_Delay(2000);
+        Board_Delay(2000);
     }
 }
 

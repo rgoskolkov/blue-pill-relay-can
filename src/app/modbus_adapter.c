@@ -1,13 +1,9 @@
 #include "modbus_adapter.h"
 #include "Modbus.h"
-#include "usart.h"
 #include "relay_driver.h"
 #include "led_driver.h"
-#include "board_config.h"
-#include "cmsis_os2.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include <stdio.h>
 
 // --- Глобальные переменные ---
 modbusHandler_t mHandler;

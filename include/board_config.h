@@ -89,4 +89,30 @@
 #define SWITCH8_PIN SWITCH8_Pin
 #define SWITCH8_PORT SWITCH8_GPIO_Port
 
+// Hardware Porting Layer: Pin Mappings
+extern const GPIO_TypeDef* const relay_ports[NUM_SWITCHES];
+extern const uint16_t relay_pins[NUM_SWITCHES];
+extern const GPIO_TypeDef* const switch_ports[NUM_SWITCHES];
+extern const uint16_t switch_pins[NUM_SWITCHES];
+
+/* =================================================================================
+   Hardware Porting Layer: Function Prototypes
+==================================================================================*/
+
+// --- System Tick ---
+uint32_t Board_GetTick(void);
+void Board_Delay(uint32_t Delay);
+
+// --- GPIO ---
+void Board_GPIO_Write(void *gpio_port, uint16_t gpio_pin, uint8_t state);
+uint8_t Board_GPIO_Read(void *gpio_port, uint16_t gpio_pin);
+
+// --- Wrappers for specific hardware ---
+void Board_LED_On(void);
+void Board_LED_Off(void);
+void Board_Relay_On(uint8_t relay_number);
+void Board_Relay_Off(uint8_t relay_number);
+uint8_t Board_Switch_Read(uint8_t switch_number);
+
+
 #endif /* BOARD_CONFIG_H */

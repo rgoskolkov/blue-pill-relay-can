@@ -15,7 +15,7 @@ static bool switch_state[NUM_SWITCHES];
 static bool debounce_check(uint8_t idx)
 {
     if (idx >= NUM_SWITCHES) return false;
-    uint32_t now = HAL_GetTick();
+    uint32_t now = Board_GetTick();
     return (now - last_event_ts[idx]) > DEBOUNCE_MS;
 }
 
@@ -27,33 +27,19 @@ void Input_Init(void)
     memset(switch_state, 0, sizeof(switch_state));
 }
 
-// Array to map switch index to GPIO Port
-static GPIO_TypeDef* const switch_ports[NUM_SWITCHES] = {
-    SWITCH1_GPIO_Port, SWITCH2_GPIO_Port, SWITCH3_GPIO_Port, SWITCH4_GPIO_Port,
-    SWITCH5_GPIO_Port, SWITCH6_GPIO_Port, SWITCH7_GPIO_Port, SWITCH8_GPIO_Port
-};
-
-// Array to map switch index to GPIO Pin
-static const uint16_t switch_pins[NUM_SWITCHES] = {
-    SWITCH1_Pin, SWITCH2_Pin, SWITCH3_Pin, SWITCH4_Pin,
-    SWITCH5_Pin, SWITCH6_Pin, SWITCH7_Pin, SWITCH8_Pin
-};
-
 void process_switch_event(uint8_t i)
 {
     if (i >= NUM_SWITCHES) return;
 
-    uint32_t now = HAL_GetTick();
+    uint32_t now = Board_GetTick();
 
     if (!debounce_check(i)) {
         return;
     }
     
-    GPIO_TypeDef* port = switch_ports[i];
-    uint16_t pin = switch_pins[i];
-    uint8_t current_state = (HAL_GPIO_ReadPin(port, pin) == GPIO_PIN_SET) ? 0u : 1u;
+    uint8_t current_state = Board_Switch_Read(i);
 
-    printf("Switch %d interrupt, state: %d\n", i, current_state);
+    // printf("Switch %d interrupt, state: %d\n", i, current_state);
 
     last_event_ts[i] = now;
 
