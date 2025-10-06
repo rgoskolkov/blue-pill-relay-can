@@ -32,7 +32,7 @@ UART_HandleTypeDef huart3;
 
 void MX_USART1_UART_Init(void)
 {
-#if UART1_DEBUG == 1
+#if UART_DEBUG == 1
   /* USER CODE BEGIN USART1_Init 0 */
 
   /* USER CODE END USART1_Init 0 */
@@ -98,7 +98,7 @@ void MX_USART3_UART_Init(void)
 void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
    GPIO_InitTypeDef GPIO_InitStruct = {0};
-#if UART1_DEBUG == 1
+#if UART_DEBUG == 1
   if(uartHandle->Instance==USART1)
   {
   /* USER CODE BEGIN USART1_MspInit 0 */

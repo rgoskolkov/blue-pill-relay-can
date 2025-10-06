@@ -69,7 +69,7 @@ void _exit (int status)
 __attribute__((weak)) int _read(int file, char *ptr, int len)
 {
   (void)file;
-  #if UART1_DEBUG == 1
+  #if UART_DEBUG == 1
     (void)ptr;
     (void)len;
     return -1;
@@ -86,7 +86,7 @@ __attribute__((weak)) int _read(int file, char *ptr, int len)
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
     (void)file;
-#if UART1_DEBUG == 1
+#if UART_DEBUG == 1
        HAL_UART_Transmit(&huart1, (uint8_t*)ptr, len, HAL_MAX_DELAY);
       return len; 
 #else

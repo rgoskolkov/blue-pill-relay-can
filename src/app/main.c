@@ -2,12 +2,10 @@
 #include "gpio.h"
 #include "cmsis_os.h"
 #include "usart.h"
-#include "input_driver.h"
-#include "modbus_adapter.h"
-#include "relay_driver.h"
 #include "tim.h"
 #include "stm32f1xx.h"
 #include <stdio.h>
+#include "main_application.h"
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
@@ -33,14 +31,12 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-  SystemClock_Config();  // сгенерирован CubeMX
-  MX_GPIO_Init();        // CubeMX
-  MX_TIM1_Init();        // CubeMX
-  MX_USART3_UART_Init(); // CubeMX
-  MX_USART1_UART_Init(); // CubeMX
-  Input_Init();
-  relay_init();
-  modbus_adapter_init(&huart3);
+  SystemClock_Config();
+  MX_GPIO_Init();
+  MX_TIM1_Init();
+  MX_USART3_UART_Init();
+  MX_USART1_UART_Init();
+  application_init(&huart3); // инициализация приложения
   
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */

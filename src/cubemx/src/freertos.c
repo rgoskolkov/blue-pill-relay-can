@@ -110,13 +110,8 @@ void MX_FREERTOS_Init(void) {
   #if MONITOR_TASK == 1
     osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
   #endif  
-  // xTaskCreate(, "led_task", configMINIMAL_STACK_SIZE, NULL, 30, NULL);
-  // xTaskCreate(, "input_task", 128, NULL, 23, NULL);
-  // /* StartTaskModbusSlave is created by the Modbus library in ModbusInit().
   //   Avoid double-creating it here; call modbus_adapter_init() before scheduler start
   //   so the library can create its own task. */
-  // xTaskCreate(sync_task, "sync_task", 256, NULL, 26, NULL);
-  // xTaskCreate(modbus_diag_task, "diag_task", 512, NULL, 40, NULL);
  /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

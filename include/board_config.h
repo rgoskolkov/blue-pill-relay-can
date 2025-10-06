@@ -32,8 +32,8 @@
 #define MODBUS_UART_PARITY 0
 #endif
 
-#ifndef UART1_DEBUG
-#define UART1_DEBUG 0
+#ifndef UART_DEBUG
+#define UART_DEBUG 0
 #endif
 
 #ifndef MONITOR_TASK
