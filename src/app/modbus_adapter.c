@@ -1,5 +1,6 @@
 #include "modbus_adapter.h"
 #include "Modbus.h"
+#include "board_config.h"
 #include "relay_driver.h"
 #include "led_driver.h"
 #include "FreeRTOS.h"
@@ -8,7 +9,14 @@
 // --- Глобальные переменные ---
 modbusHandler_t mHandler;
 // 1 регистр для хранения состояния 8 коилов
-uint16_t usRegHolding[1] = {0}; 
+uint16_t usRegHolding[1] = {0};
+
+// Callback function to notify the sync task
+void ModbusDataReceiveCallback(void) {
+    if (syncTaskHandle != NULL) {
+        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_MODBUS);
+    }
+}
 
 void modbus_adapter_init(void)
 {
@@ -20,6 +28,10 @@ void modbus_adapter_init(void)
     mHandler.xTypeHW = USART_HW;
     mHandler.u16regs = usRegHolding;
     mHandler.u16regsize = 8;
+
+    // Assign callbacks
+    mHandler.OnHeartbeat = led_signal_heartbeat;
+    mHandler.OnDataReceive = ModbusDataReceiveCallback;
 
     ModbusInit(&mHandler);
     ModbusStart(&mHandler);

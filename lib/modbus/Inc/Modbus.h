@@ -184,6 +184,8 @@ tcpclients_t;
  * Modbus handler structure
  * Contains all the variables required for Modbus daemon operation
  */
+typedef void (*ModbusCallback)(void);
+
 typedef struct
 {
 
@@ -192,6 +194,11 @@ typedef struct
 	uint8_t u8id; //!< 0=master, 1..247=slave number
 	GPIO_TypeDef* EN_Port; //!< flow control pin: 0=USB or RS-232 mode, >1=RS-485 mode
 	uint16_t EN_Pin;  //!< flow control pin: 0=USB or RS-232 mode, >1=RS-485 mode
+    
+    // Callbacks
+    ModbusCallback OnHeartbeat;
+    ModbusCallback OnDataReceive;
+
 	mb_err_op_t i8lastError;
 	uint8_t u8Buffer[MAX_BUFFER]; //Modbus buffer for communication
 	uint8_t u8BufferSize;

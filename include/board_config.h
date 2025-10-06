@@ -1,17 +1,16 @@
+#ifndef BOARD_CONFIG_H
+#define BOARD_CONFIG_H
 /*
   board_config.h
    Можно переопределить через build_flags (-D...) в platformio.ini
 */
 
+#include "main.h"
+#include <stdint.h>
+
 #ifndef MODBUS_UART_STOPBITS
 #define MODBUS_UART_STOPBITS 1
 #endif
-
-#ifndef BOARD_CONFIG_H
-#define BOARD_CONFIG_H
-
-#include "main.h"
-#include <stdint.h>
 
 /* Параметры по умолчанию (можно переопределить через -D в platformio.ini) */
 #ifndef NUM_SWITCHES
@@ -26,29 +25,19 @@
 #define MODBUS_SLAVE_ID 1U
 #endif
 
-/* MODBUS_UART_PARITY: 0 = NONE, 1 = ODD, 2 = EVEN
-   По умолчанию — NONE*/
+/* MODBUS_UART_PARITY: 0 = NONE, 1 = ODD, 2 = EVEN */
 #ifndef MODBUS_UART_PARITY
 #define MODBUS_UART_PARITY 0
 #endif
 
 #ifndef UART_DEBUG
-#define UART_DEBUG 0
+#define UART_DEBUG 1
 #endif
 
 #ifndef MONITOR_TASK
 #define MONITOR_TASK 0
 #endif
 
-/* DEBOUNCE_MS — интервал дебаунса для механических переключателей в миллисекундах.
-   Назначение: фильтрация механического дребезга контактов перед генерацией события.
-   Как задать:
-     - глобально в проекте: добавить в platformio.ini в секцию env:
-         build_flags = -DDEBOUNCE_MS=80
-     - или прямо в этом файле заменить значение ниже.
-
-   По умолчанию установлен 50 ms — разумное значение для большинства кнопок.
-*/
 #ifndef DEBOUNCE_MS
 #define DEBOUNCE_MS 300U
 #endif
@@ -103,7 +92,10 @@ extern UART_HandleTypeDef huart3;
 #define DEBUG_UART_HANDLE  huart1
 
 
-// Hardware Porting Layer: Pin Mappings
+/* =================================================================================
+   Hardware Porting Layer: Pin Mapping Arrays (extern)
+==================================================================================*/
+
 extern const GPIO_TypeDef* const relay_ports[NUM_SWITCHES];
 extern const uint16_t relay_pins[NUM_SWITCHES];
 extern const GPIO_TypeDef* const switch_ports[NUM_SWITCHES];

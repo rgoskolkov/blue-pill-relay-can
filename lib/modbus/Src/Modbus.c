@@ -15,8 +15,6 @@
 #include "timers.h"
 #include "semphr.h"
 #include <stdio.h>
-#include "modbus_adapter.h"
-#include "led_driver.h"
 
 
 
@@ -48,10 +46,15 @@ const osMessageQueueAttr_t QueueTelegram_attributes = {
 };
 
 
+// Set a default stack size if not defined in ModbusConfig.h
+#ifndef MODBUS_SLAVE_STACK_SIZE
+#define MODBUS_SLAVE_STACK_SIZE (128 * 4)
+#endif
+
 const osThreadAttr_t myTaskModbusA_attributes = {
     .name = "TaskModbusSlave",
     .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 256 * 4
+    .stack_size = MODBUS_SLAVE_STACK_SIZE
 };
 
 const osThreadAttr_t myTaskModbusA_attributesTCP = {
@@ -743,7 +746,9 @@ void StartTaskModbusSlave(void *argument)
 	
 	   // Если мы здесь, значит, запрос от мастера корректен.
 	   // Это лучшее место, чтобы сообщить, что связь жива.
-	   led_signal_heartbeat();
+	       if (modH->OnHeartbeat) {
+	           modH->OnHeartbeat();
+	       }
 
 	modH->i8lastError = 0;
 	   //printf("MDB: taking sphr\r\n");
@@ -1848,9 +1853,8 @@ int8_t process_FC5( modbusHandler_t *modH )
     u8CopyBufferSize =  modH->u8BufferSize +2;
     sendTxBuffer(modH);
 
-    if (syncTaskHandle != NULL)
-    {
-        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_MODBUS);
+    if (modH->OnDataReceive) {
+        modH->OnDataReceive();
     }
     return u8CopyBufferSize;
 }
@@ -1878,9 +1882,8 @@ int8_t process_FC6(modbusHandler_t *modH )
     u8CopyBufferSize = modH->u8BufferSize + 2;
     sendTxBuffer(modH);
 
-    if (syncTaskHandle != NULL)
-    {
-        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_MODBUS);
+    if (modH->OnDataReceive) {
+        modH->OnDataReceive();
     }
     return u8CopyBufferSize;
 }
@@ -1939,9 +1942,8 @@ int8_t process_FC15( modbusHandler_t *modH )
     modH->u8BufferSize         = 6;
     u8CopyBufferSize = modH->u8BufferSize +2;
     sendTxBuffer(modH);
-    if (syncTaskHandle != NULL)
-    {
-        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_MODBUS);
+    if (modH->OnDataReceive) {
+        modH->OnDataReceive();
     }
     return u8CopyBufferSize;
 }
@@ -1979,9 +1981,8 @@ int8_t process_FC16(modbusHandler_t *modH )
     u8CopyBufferSize = modH->u8BufferSize +2;
     sendTxBuffer(modH);
 
-    if (syncTaskHandle != NULL)
-    {
-        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_MODBUS);
+    if (modH->OnDataReceive) {
+        modH->OnDataReceive();
     }
     return u8CopyBufferSize;
 }
