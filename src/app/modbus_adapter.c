@@ -1,28 +1,23 @@
 #include "modbus_adapter.h"
 #include "Modbus.h"
-#include "main.h"
-#include "usart.h" 
+#include "usart.h"
 #include "relay_driver.h"
 #include "led_driver.h"
 #include "board_config.h"
 #include "cmsis_os2.h"
-#include "stm32f1xx.h"
 #include "FreeRTOS.h"
-#include <stdio.h>
 #include "task.h"
+#include <stdio.h>
 
 // --- Глобальные переменные ---
 modbusHandler_t mHandler;
 // 1 регистр для хранения состояния 8 коилов
 uint16_t usRegHolding[1] = {0}; 
 
-/* Diagnostic IRQ counter exported from ISR file */
-extern volatile uint32_t usart3_irq_count;
-
-void modbus_adapter_init(void)
+void modbus_adapter_init(UART_HandleTypeDef *port)
 {
     mHandler.uModbusType = MB_SLAVE;
-    mHandler.port = &huart3;
+    mHandler.port = port;
     mHandler.u8id = MODBUS_SLAVE_ID;
     mHandler.u16timeOut = 1000;
     mHandler.EN_Port = NULL;

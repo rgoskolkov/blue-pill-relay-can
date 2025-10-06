@@ -1,11 +1,9 @@
-#include "main.h"
 #include "input_driver.h"
-#include "modbus_map.h"
 #include "board_config.h"
-#include "stm32f1xx_hal.h"
 #include <string.h>
 #include "led_driver.h"
-#include <stdio.h>
+#include "stdbool.h"
+#include "relay_driver.h"
 
 #define LONG_PRESS_TIME_MS 2000
 
@@ -65,7 +63,7 @@ void process_switch_event(uint8_t i)
         // Мгновенное переключение
         switch_state[i] = !switch_state[i];
         led_signal_ack();
-        modbus_map_update_switch(i, switch_state[i]);
+        switch_state[i] ? relay_on(i) : relay_off(i);
     }
     else // Отпускание (переход в HIGH)
     {
@@ -75,7 +73,7 @@ void process_switch_event(uint8_t i)
             // Долгое нажатие - отменяем действие
             switch_state[i] = !switch_state[i];
             led_signal_ack();
-            modbus_map_update_switch(i, switch_state[i]);
+            switch_state[i] ? relay_on(i) : relay_off(i);
         }
     }
     prev_states[i] = current_state;

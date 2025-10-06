@@ -43,7 +43,6 @@
  *----------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-#include "main.h"
 /* Section where include file can be added */
 /* USER CODE END Includes */
 

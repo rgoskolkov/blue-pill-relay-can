@@ -11,6 +11,7 @@
 #ifndef THIRD_PARTY_MODBUS_LIB_CONFIG_MODBUSCONFIG_H_
 #define THIRD_PARTY_MODBUS_LIB_CONFIG_MODBUSCONFIG_H_
 
+#include "board_config.h"
 
 /* Uncomment the following line to enable support for Modbus RTU over USB CDC profile. Only tested for BluePill f103 board. */
 //#define ENABLE_USB_CDC 1

@@ -2,12 +2,10 @@
 #include "gpio.h"
 #include "cmsis_os.h"
 #include "usart.h"
-#include "modbus_map.h"
 #include "input_driver.h"
 #include "modbus_adapter.h"
 #include "relay_driver.h"
 #include "tim.h"
-#include "led_driver.h"
 #include "stm32f1xx.h"
 #include <stdio.h>
 /* Private function prototypes -----------------------------------------------*/
@@ -29,10 +27,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  // CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-  // ITM->LAR = 0xC5ACCE55;
-  // ITM->TCR |= ITM_TCR_ITMENA_Msk;
-  // ITM->TER |= 1; // ITM Port 0 enabled
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -43,11 +37,10 @@ int main(void)
   MX_GPIO_Init();        // CubeMX
   MX_TIM1_Init();        // CubeMX
   MX_USART3_UART_Init(); // CubeMX
-  MX_USART1_UART_Init();
-  modbus_map_init();
+  MX_USART1_UART_Init(); // CubeMX
   Input_Init();
   relay_init();
-  modbus_adapter_init();
+  modbus_adapter_init(&huart3);
   
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -109,45 +102,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-#include <string.h>
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
-{
-    printf("vApplicationStackOverflowHook: %s\n", pcTaskName);
-
-    int blink_count = 5; // По умолчанию 5 миганий для неизвестной задачи
-
-    if (strcmp(pcTaskName, "led_task") == 0) {
-        blink_count = 1;
-    } else if (strcmp(pcTaskName, "TaskModbusSlave") == 0) { // Имя задачи из новой библиотеки
-        blink_count = 3;
-    }
-    // Задачу таймеров (Tmr Svc) нельзя получить так просто,
-    // но если это не одна из трех наших, скорее всего, это она.
-
-    for(;;)
-    {
-        for (int i=0; i < blink_count; i++) {
-            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-            HAL_Delay(200);
-            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-            HAL_Delay(200);
-        }
-        HAL_Delay(1000);
-    }
-}
-
-void vApplicationMallocFailedHook(void)
-{
-   /* This function will be called if a call to pvPortMalloc() fails. */
-   /* Blink fast pattern for malloc failed */
-   printf("vApplicationMallocFailedHook\n");
-   for(;;)
-   {
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(500);
-   }
-}
 /* USER CODE END 4 */
 
 /**

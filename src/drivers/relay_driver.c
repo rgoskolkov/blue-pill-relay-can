@@ -1,7 +1,5 @@
-#include "main.h"
 #include "relay_driver.h"
 #include "board_config.h"
-#include "stm32f1xx_hal.h"
 #include <string.h>
 #include "modbus_adapter.h"
 
@@ -14,12 +12,19 @@ static uint16_t relay_pins[NUM_SWITCHES] = {
     RELAY1_Pin, RELAY2_Pin, RELAY3_Pin, RELAY4_Pin,
     RELAY5_Pin, RELAY6_Pin, RELAY7_Pin, RELAY8_Pin};
 
+static void RELAY_OFF(uint8_t relay_number) {
+    HAL_GPIO_WritePin(relay_ports[relay_number], relay_pins[relay_number], GPIO_PIN_SET);
+}
+static void RELAY_ON(uint8_t relay_number) {
+    HAL_GPIO_WritePin(relay_ports[relay_number], relay_pins[relay_number], GPIO_PIN_RESET);
+}
+
 static void Relay_Init(void)
 {
     memset(relay_states_local, 0, sizeof(relay_states_local));
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i)
     {
-        HAL_GPIO_WritePin(relay_ports[i], relay_pins[i], GPIO_PIN_SET);
+        RELAY_OFF(i);
         relay_states_local[i] = 0;
     }
 }
@@ -29,9 +34,7 @@ static void Relay_SetState(uint8_t relay_number, uint8_t state)
     if (relay_number >= NUM_SWITCHES)
         return;
     relay_states_local[relay_number] = state ? 1 : 0;
-    HAL_GPIO_WritePin(relay_ports[relay_number], relay_pins[relay_number],
-                      state ? GPIO_PIN_RESET : GPIO_PIN_SET);
-
+    state ? RELAY_ON(relay_number) : RELAY_OFF(relay_number);
     if (syncTaskHandle != NULL)
     {
         osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_RELAY);

@@ -1,8 +1,8 @@
 #include "led_driver.h"
-#include "main.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include <limits.h> // Для ULONG_MAX
+#include "board_config.h"
 
 // --- Определения для управления светодиодом ---
 #define LED_ON() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET)
@@ -18,6 +18,40 @@ static volatile TickType_t g_last_heartbeat_tick = 0;
 const TickType_t HEARTBEAT_TIMEOUT_TICKS = pdMS_TO_TICKS(15000); // 15 секунд
 
 // --- Публичные функции ---
+void dead_hand(uint32_t delay, uint32_t count){
+    // Вечный цикл с миганием
+    for(;;)
+    {
+        for (int i=0; i < count; i++) {
+            LED_ON();
+            HAL_Delay(delay);
+            LED_OFF();
+            HAL_Delay(delay);
+        }
+        HAL_Delay(2000);
+    }
+}
+
+void configASSERT_Handler(uint32_t pc) {
+    printf("configASSERT_Handler at PC: %08lX\n", pc);
+    for (;;) {
+        LED_ON();
+        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
+        LED_OFF();
+        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
+
+        LED_ON();
+        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
+        LED_OFF();
+        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
+
+        LED_ON();
+        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
+        LED_OFF();
+
+        for (volatile int i = 0; i < 800000; ++i) __asm volatile("nop");
+    }
+}
 
 void led_signal_ack(void) {
     if (led_task_handle != NULL) {

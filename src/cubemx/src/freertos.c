@@ -20,16 +20,15 @@
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "task.h"
-#include "main.h"
 #include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led_driver.h"
-#include "input_driver.h"
 #include "modbus_adapter.h"
 #include "system_monitor.h"
 #include "board_config.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,5 +127,25 @@ void MX_FREERTOS_Init(void) {
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    printf("vApplicationStackOverflowHook: %s\n", pcTaskName);
 
+    int blink_count = 5; // По умолчанию 5 миганий для неизвестной задачи
+
+    if (strcmp(pcTaskName, "led_task") == 0) {
+        blink_count = 1;
+    } else if (strcmp(pcTaskName, "TaskModbusSlave") == 0) { // Имя задачи из библиотеки modbus
+        blink_count = 3;
+    }
+    dead_hand(200, blink_count);
+}
+
+void vApplicationMallocFailedHook(void)
+{
+   /* This function will be called if a call to pvPortMalloc() fails. */
+   /* Blink fast pattern for malloc failed */
+  printf("vApplicationMallocFailedHook\n");
+  dead_hand(500, 4);
+}
 /* USER CODE END Application */
