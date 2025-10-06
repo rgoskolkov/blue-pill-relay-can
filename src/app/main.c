@@ -36,7 +36,7 @@ int main(void)
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
-  application_init(&huart3); // инициализация приложения
+  application_init(); // инициализация приложения
   
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */

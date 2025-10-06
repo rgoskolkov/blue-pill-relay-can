@@ -2,9 +2,9 @@
 #include "modbus_adapter.h"
 #include "relay_driver.h"
 
-void application_init(UART_HandleTypeDef *port)
+void application_init(void)
 {
     Input_Init();
     relay_init();
-    modbus_adapter_init(port);
+    modbus_adapter_init();
 }

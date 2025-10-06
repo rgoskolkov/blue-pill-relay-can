@@ -10,10 +10,10 @@ modbusHandler_t mHandler;
 // 1 регистр для хранения состояния 8 коилов
 uint16_t usRegHolding[1] = {0}; 
 
-void modbus_adapter_init(UART_HandleTypeDef *port)
+void modbus_adapter_init(void)
 {
     mHandler.uModbusType = MB_SLAVE;
-    mHandler.port = port;
+    mHandler.port = &MODBUS_UART_HANDLE;
     mHandler.u8id = MODBUS_SLAVE_ID;
     mHandler.u16timeOut = 1000;
     mHandler.EN_Port = NULL;

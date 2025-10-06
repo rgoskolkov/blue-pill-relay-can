@@ -89,6 +89,20 @@
 #define SWITCH8_PIN SWITCH8_Pin
 #define SWITCH8_PORT SWITCH8_GPIO_Port
 
+
+/* =================================================================================
+   Hardware Peripheral Mapping
+==================================================================================*/
+
+// Declare UART handles defined in usart.c
+extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart3;
+
+// Map logical names to physical UART handles
+#define MODBUS_UART_HANDLE huart3
+#define DEBUG_UART_HANDLE  huart1
+
+
 // Hardware Porting Layer: Pin Mappings
 extern const GPIO_TypeDef* const relay_ports[NUM_SWITCHES];
 extern const uint16_t relay_pins[NUM_SWITCHES];
