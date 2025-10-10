@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "led_driver.h"
 #include "system_monitor.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -51,7 +52,52 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HardFault_c_handler(uint32_t *stacked_frame) {
+    uint32_t fault_address = stacked_frame[6];
 
+    // Enable PWR and BKP clocks
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_RCC_BKP_CLK_ENABLE();
+    // Allow access to Backup domain
+    HAL_PWR_EnableBkUpAccess();
+
+    // Use BKP registers to store crash information.
+    // On STM32F1, these are separate from RTC.
+    BKP->DR1 = 0xDEAD; // Magic number
+    BKP->DR2 = (fault_address & 0xFFFF0000) >> 16; // High 16 bits
+    BKP->DR3 = (fault_address & 0x0000FFFF);      // Low 16 bits
+
+    // Disable access to Backup domain
+    HAL_PWR_DisableBkUpAccess();
+
+    // Infinite loop with SOS blink
+    while (1) {
+        // S
+        for (int i = 0; i < 3; i++) {
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+            for (volatile int d = 0; d < 100000; d++);
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+            for (volatile int d = 0; d < 100000; d++);
+        }
+        for (volatile int d = 0; d < 300000; d++);
+        // O
+        for (int i = 0; i < 3; i++) {
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+            for (volatile int d = 0; d < 400000; d++);
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+            for (volatile int d = 0; d < 100000; d++);
+        }
+        for (volatile int d = 0; d < 300000; d++);
+        // S
+        for (int i = 0; i < 3; i++) {
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+            for (volatile int d = 0; d < 100000; d++);
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+            for (volatile int d = 0; d < 100000; d++);
+        }
+        for (volatile int d = 0; d < 1000000; d++);
+    }
+}
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -88,9 +134,13 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
-  /* USER CODE BEGIN HardFault_IRQn 0 */
-    print_hard_fault_details();
-    dead_hand(700,6);
+    __asm volatile (
+        " tst lr, #4                                                \n"
+        " ite eq                                                    \n"
+        " mrseq r0, msp                                             \n"
+        " mrsne r0, psp                                             \n"
+        " b HardFault_c_handler                                     \n"
+    );
 }
 
 /**
