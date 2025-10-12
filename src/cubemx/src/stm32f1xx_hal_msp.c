@@ -74,7 +74,7 @@ void HAL_MspInit(void)
   /* PendSV_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
   /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+  HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0); //todo а нужно ли теперь?
 
   /** NOJTAG: JTAG-DP Disabled and SW-DP Enabled
   */

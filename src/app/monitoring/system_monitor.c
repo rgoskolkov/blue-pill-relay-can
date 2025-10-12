@@ -20,59 +20,48 @@ const char* taskStateToString(eTaskState state) {
     }
 }
 
-void print_hard_fault_details(void) {
-        uint32_t *stack_pointer;
-    
-    // Получаем указатель стека
-    __asm volatile (
-        "tst lr, #4\n"          // Проверяем какой стек использовался
-        "ite eq\n"               // if-then-else
-        "mrseq r0, msp\n"       // main stack pointer
-        "mrsne r0, psp\n"       // process stack pointer  
-        "mov %0, r0\n"          // сохраняем в stack_pointer
-        : "=r" (stack_pointer)
-        : 
-        : "r0"
-    );
-    
-    // Регистры из стека
-    // uint32_t r0 = stack_pointer[0];
-    // uint32_t r1 = stack_pointer[1];
-    // uint32_t r2 = stack_pointer[2]; 
-    // uint32_t r3 = stack_pointer[3];
-    // uint32_t r12 = stack_pointer[4];
-    uint32_t lr = stack_pointer[5];    // LR в момент сбоя
-    uint32_t pc = stack_pointer[6];    // PC в момент сбоя! 
-   // uint32_t psr = stack_pointer[7];
-    
-    // Регистры fault
-    uint32_t cfsr = (*((volatile uint32_t *)(0xE000ED28))); // Configurable Fault Status
-    uint32_t mmfar = (*((volatile uint32_t *)(0xE000ED34))); // MemManage Fault Address
-//    uint32_t bfar = (*((volatile uint32_t *)(0xE000ED38))); // BusFault Address
-    
-    printf("\r\n=== HARD FAULT ===\r\n");
-    
-    printf("PC: 0x%08lX\r\n", pc);
-    
-    printf("LR: 0x%08lX\r\n", lr);
-    
-    printf("CFSR: 0x%08lX\r\n", cfsr);
-    
-    // Анализ причин
-    if (cfsr & (1 << 0)) {
-        printf("Reason: Instruction access violation\r\n");
-    }
-    if (cfsr & (1 << 1)) {
-        printf("Reason: Data access violation\r\n");
-    }
-    if (cfsr & (1 << 16)) {
-        printf("Reason: Invalid state (probably FPU)\r\n");
-    }
-    if (cfsr & (1 << 17)) {
-        printf("Reason: Invalid PC load\r\n");
-    }
-    
-    printf("Fault address: 0x%08lX\r\n", mmfar);
+void print_fault_details(void) {
+  // Check for and report a previous HardFault
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_RCC_BKP_CLK_ENABLE();
+  HAL_PWR_EnableBkUpAccess();
+  if (BKP->DR1 == 0xDEAD) {
+      uint32_t high = BKP->DR2;
+      uint32_t low = BKP->DR3;
+      uint32_t fault_addr = (high << 16) | low;
+      //todo uncomment after testing
+      //BKP->DR1 = 0; // Clear the magic number
+
+      printf("\r\n--- PREVIOUS SESSION CRASHED ---\r\n");
+      printf("HardFault at PC: 0x%08lX\r\n", fault_addr);
+      printf("--------------------------------\r\n");
+      HAL_Delay(100); // Give time for the message to be sent
+  }
+
+  if (BKP->DR7 == 0xBEEF) {
+      uint32_t high = BKP->DR8;
+      uint32_t low = BKP->DR9;
+      uint32_t fault_addr = (high << 16) | low;
+      BKP->DR7 = 0; // Clear the magic number
+
+      printf("\r\n--- PREVIOUS SESSION FAILED ---\r\n");
+      printf("MemManage fault at: 0x%08lX\r\n", fault_addr);
+      printf("--------------------------------\r\n");
+      HAL_Delay(100);
+  }
+
+  if (BKP->DR4 == 0xAAAA) {
+      uint32_t high = BKP->DR5;
+      uint32_t low = BKP->DR6;
+      uint32_t assert_addr = (high << 16) | low;
+      BKP->DR4 = 0; // Clear the magic number
+
+      printf("\r\n--- PREVIOUS SESSION FAILED ---\r\n");
+      printf("configASSERT at: 0x%08lX\r\n", assert_addr);
+      printf("--------------------------------\r\n");
+      HAL_Delay(100);
+  }
+  HAL_PWR_DisableBkUpAccess();
 }
 
 void system_monitor(void) {

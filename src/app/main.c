@@ -37,24 +37,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
   application_init(); // инициализация приложения
-
-  // Check for and report a previous HardFault
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_RCC_BKP_CLK_ENABLE();
-  HAL_PWR_EnableBkUpAccess();
-  if (BKP->DR1 == 0xDEAD) {
-      uint32_t high = BKP->DR2;
-      uint32_t low = BKP->DR3;
-      uint32_t fault_addr = (high << 16) | low;
-      //todo uncomment after testing
-      //BKP->DR1 = 0; // Clear the magic number
-
-      printf("\r\n--- PREVIOUS SESSION CRASHED ---\r\n");
-      printf("HardFault at PC: 0x%08lX\r\n", fault_addr);
-      printf("--------------------------------\r\n");
-      HAL_Delay(100); // Give time for the message to be sent
-  }
-  HAL_PWR_DisableBkUpAccess();
+  print_fault_details();
   
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */

@@ -32,27 +32,6 @@ void dead_hand(uint32_t delay, uint32_t count){
     }
 }
 
-void configASSERT_Handler(uint32_t pc) {
-    printf("configASSERT_Handler at PC: %08lX\n", pc);
-    for (;;) {
-        LED_ON();
-        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
-        LED_OFF();
-        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
-
-        LED_ON();
-        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
-        LED_OFF();
-        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
-
-        LED_ON();
-        for (volatile int i = 0; i < 200000; ++i) __asm volatile("nop");
-        LED_OFF();
-
-        for (volatile int i = 0; i < 800000; ++i) __asm volatile("nop");
-    }
-}
-
 void led_signal_ack(void) {
     if (led_task_handle != NULL) {
         xTaskNotify(led_task_handle, LED_EVENT_ACK, eSetBits);

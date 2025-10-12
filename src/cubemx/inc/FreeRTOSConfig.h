@@ -75,6 +75,9 @@
 #define configUSE_MALLOC_FAILED_HOOK             1
 #define configUSE_COUNTING_SEMAPHORES            1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION  0
+#define configUSE_MPU_WRAPPERS_V1                1
+#define configINCLUDE_APPLICATION_DEFINED_PRIVILEGED_FUNCTIONS 0
+#define configUSE_MPU                            1
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES                    0
@@ -128,10 +131,10 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 
 /* Interrupt priorities used by the kernel port layer itself.  These are generic
 to all Cortex-M ports, and do not rely on any particular library functions. */
-#define configKERNEL_INTERRUPT_PRIORITY 		configLIBRARY_LOWEST_INTERRUPT_PRIORITY
+#define configKERNEL_INTERRUPT_PRIORITY 		( configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY 	configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY 	( configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 
 /* Normal assert() semantics without relying on the provision of an assert.h
 header file. */

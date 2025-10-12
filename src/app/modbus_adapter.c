@@ -90,9 +90,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             RingAdd(&mHandlers[i]->xBufferRX, mHandlers[i]->dataRX);
             HAL_UART_Receive_IT(mHandlers[i]->port, &mHandlers[i]->dataRX, 1);
             UBaseType_t uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
-            if (xTimerResetFromISR(mHandlers[i]->xTimerT35, &xHigherPriorityTaskWoken) != pdPASS) {
-                // This should not happen now, but we leave the message for safety
-                printf("Timer reset FAIL");
+            if (xTimerChangePeriodFromISR(mHandlers[i]->xTimerT35, T35, &xHigherPriorityTaskWoken) != pdPASS) {
+                printf("Timer reset FAIL");                // Failed to change the timer period
             }
             taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
             break;

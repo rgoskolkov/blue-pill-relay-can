@@ -130,7 +130,7 @@
   */
 #define  VDD_VALUE                    3300U /*!< Value of VDD in mv */
 #define  TICK_INT_PRIORITY            15U    /*!< tick interrupt priority (lowest by default)  */
-#define  USE_RTOS                     0U
+#define  USE_RTOS                     0U //todo i dont know why
 #define  PREFETCH_ENABLE              1U
 
 #define  USE_HAL_ADC_REGISTER_CALLBACKS         0U /* ADC register callback disabled       */

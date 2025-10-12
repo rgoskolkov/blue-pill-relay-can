@@ -52,6 +52,30 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void configASSERT_Handler(uint32_t assert_address) {
+    //printf("configASSERT_Handler at PC: %08lX\n", assert_address);
+    // Save the assert location to a backup register
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_RCC_BKP_CLK_ENABLE();
+    HAL_PWR_EnableBkUpAccess();
+    BKP->DR4 = 0xAAAA; // Magic number for configASSERT
+    BKP->DR5 = (assert_address & 0xFFFF0000) >> 16;
+    BKP->DR6 = (assert_address & 0x0000FFFF);
+    HAL_PWR_DisableBkUpAccess();
+
+    // Infinite loop with a different blink pattern
+    while(1) {
+        // Blink fast
+        for (int i = 0; i < 5; i++) {
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+            for (volatile int d = 0; d < 100000; d++);
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+            for (volatile int d = 0; d < 100000; d++);
+        }
+        for (volatile int d = 0; d < 1000000; d++);
+    }
+}
+
 void HardFault_c_handler(uint32_t *stacked_frame) {
     uint32_t fault_address = stacked_frame[6];
 
@@ -95,7 +119,7 @@ void HardFault_c_handler(uint32_t *stacked_frame) {
             HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
             for (volatile int d = 0; d < 100000; d++);
         }
-        for (volatile int d = 0; d < 1000000; d++);
+        for (volatile int d = 0; d < 10000000; d++);
     }
 }
 /* USER CODE END 0 */
@@ -146,16 +170,47 @@ void HardFault_Handler(void)
 /**
   * @brief This function handles Memory management fault.
   */
+void MemManage_c_handler(uint32_t *stacked_frame); // Forward declaration
+
 void MemManage_Handler(void)
 {
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+  /* Go to infinite loop when Memory Manage exception occurs */
+  __asm volatile (
+      " tst lr, #4                                                \n"
+      " ite eq                                                    \n"
+      " mrseq r0, msp                                             \n"
+      " mrsne r0, psp                                             \n"
+      " b MemManage_c_handler                                     \n"
+  );
+}
 
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
-  }
+void MemManage_c_handler(uint32_t *stacked_frame) {
+    uint32_t fault_address = stacked_frame[6];
+
+    // Enable PWR and BKP clocks
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_RCC_BKP_CLK_ENABLE();
+    // Allow access to Backup domain
+    HAL_PWR_EnableBkUpAccess();
+
+    // Use BKP registers to store crash information.
+    BKP->DR7 = 0xBEEF; // Magic number for MemManage
+    BKP->DR8 = (fault_address & 0xFFFF0000) >> 16;
+    BKP->DR9 = (fault_address & 0x0000FFFF);
+
+    // Disable access to Backup domain
+    HAL_PWR_DisableBkUpAccess();
+
+    while(1) {
+        // Fast blinks for MemManage fault
+        for (int i = 0; i < 10; i++) {
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+            for (volatile int d = 0; d < 50000; d++);
+            HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+            for (volatile int d = 0; d < 50000; d++);
+        }
+        for (volatile int d = 0; d < 1000000; d++);
+    }
 }
 
 /**
