@@ -22,6 +22,7 @@ const char* taskStateToString(eTaskState state) {
 
 void print_fault_details(void) {
   // Check for and report a previous HardFault
+  printf("\r\n--- APPLICATION STARTUP ---\r\n");
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_RCC_BKP_CLK_ENABLE();
   HAL_PWR_EnableBkUpAccess();
@@ -42,7 +43,8 @@ void print_fault_details(void) {
       uint32_t high = BKP->DR8;
       uint32_t low = BKP->DR9;
       uint32_t fault_addr = (high << 16) | low;
-      BKP->DR7 = 0; // Clear the magic number
+      //todo uncomment after testing
+      //BKP->DR7 = 0; // Clear the magic number
 
       printf("\r\n--- PREVIOUS SESSION FAILED ---\r\n");
       printf("MemManage fault at: 0x%08lX\r\n", fault_addr);
@@ -54,7 +56,8 @@ void print_fault_details(void) {
       uint32_t high = BKP->DR5;
       uint32_t low = BKP->DR6;
       uint32_t assert_addr = (high << 16) | low;
-      BKP->DR4 = 0; // Clear the magic number
+      //todo uncomment after testing
+      //BKP->DR4 = 0; // Clear the magic number
 
       printf("\r\n--- PREVIOUS SESSION FAILED ---\r\n");
       printf("configASSERT at: 0x%08lX\r\n", assert_addr);

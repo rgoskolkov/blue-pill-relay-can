@@ -6,6 +6,7 @@
 #include "stm32f1xx.h"
 #include <stdio.h>
 #include "main_application.h"
+#include "system_monitor.h"
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
