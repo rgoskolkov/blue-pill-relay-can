@@ -75,31 +75,31 @@ void sync_task(void *argument)
         }
     }
 }
-
+#if  ENABLE_USART_DMA ==  0
 /**
   * @brief  Rx Transfer completed callback. This is a strong implementation that overrides the weak one from HAL.
   * @param  huart: UART handle
   * @retval None
   */
-// void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-//     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-//     extern modbusHandler_t *mHandlers[];
-//     extern uint8_t numberHandlers;
-//     for (int i = 0; i < numberHandlers; i++) {
-//         if (mHandlers[i]->port == huart && mHandlers[i]->xTypeHW == USART_HW) {
-//             RingAdd(&mHandlers[i]->xBufferRX, mHandlers[i]->dataRX);
-//             HAL_UART_Receive_IT(mHandlers[i]->port, &mHandlers[i]->dataRX, 1);
-//             portDISABLE_INTERRUPTS();
-//             if (xTimerChangePeriodFromISR(mHandlers[i]->xTimerT35, T35, &xHigherPriorityTaskWoken) != pdPASS) {
-//                 printf("Timer reset FAIL");                // Failed to change the timer period
-//             }
-//             portENABLE_INTERRUPTS();
-//             break;
-//         }
-//     }
-//     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-// }
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    extern modbusHandler_t *mHandlers[];
+    extern uint8_t numberHandlers;
+    for (int i = 0; i < numberHandlers; i++) {
+        if (mHandlers[i]->port == huart && mHandlers[i]->xTypeHW == USART_HW) {
+            RingAdd(&mHandlers[i]->xBufferRX, mHandlers[i]->dataRX);
+            HAL_UART_Receive_IT(mHandlers[i]->port, &mHandlers[i]->dataRX, 1);
+            portDISABLE_INTERRUPTS();
+            if (xTimerChangePeriodFromISR(mHandlers[i]->xTimerT35, T35, &xHigherPriorityTaskWoken) != pdPASS) {
+                printf("Timer reset FAIL");                // Failed to change the timer period
+            }
+            portENABLE_INTERRUPTS();
+            break;
+        }
+    }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+#endif
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	/* Modbus RTU TX callback BEGIN */
