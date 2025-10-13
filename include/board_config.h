@@ -18,7 +18,7 @@
 #endif
 
 #ifndef MODBUS_BAUDRATE
-#define MODBUS_BAUDRATE 19200U
+#define MODBUS_BAUDRATE 115200U
 #endif
 
 #ifndef MODBUS_SLAVE_ID
