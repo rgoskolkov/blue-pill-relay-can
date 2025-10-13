@@ -1,6 +1,7 @@
 #include "main.h"
 #include "gpio.h"
 #include "cmsis_os.h"
+#include "dma.h"
 #include "usart.h"
 #include "tim.h"
 #include "stm32f1xx.h"
@@ -34,6 +35,7 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   MX_USART1_UART_Init();
@@ -100,6 +102,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
 /* USER CODE END 4 */
 
 /**

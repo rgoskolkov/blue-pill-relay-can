@@ -31,12 +31,11 @@ void print_fault_details(void) {
       uint32_t low = BKP->DR3;
       uint32_t fault_addr = (high << 16) | low;
       //todo uncomment after testing
-      //BKP->DR1 = 0; // Clear the magic number
+      BKP->DR1 = 0; // Clear the magic number
 
       printf("\r\n--- PREVIOUS SESSION CRASHED ---\r\n");
       printf("HardFault at PC: 0x%08lX\r\n", fault_addr);
       printf("--------------------------------\r\n");
-      HAL_Delay(100); // Give time for the message to be sent
   }
 
   if (BKP->DR7 == 0xBEEF) {
@@ -49,7 +48,6 @@ void print_fault_details(void) {
       printf("\r\n--- PREVIOUS SESSION FAILED ---\r\n");
       printf("MemManage fault at: 0x%08lX\r\n", fault_addr);
       printf("--------------------------------\r\n");
-      HAL_Delay(100);
   }
 
   if (BKP->DR4 == 0xAAAA) {
@@ -57,12 +55,11 @@ void print_fault_details(void) {
       uint32_t low = BKP->DR6;
       uint32_t assert_addr = (high << 16) | low;
       //todo uncomment after testing
-      //BKP->DR4 = 0; // Clear the magic number
+      BKP->DR4 = 0; // Clear the magic number
 
       printf("\r\n--- PREVIOUS SESSION FAILED ---\r\n");
       printf("configASSERT at: 0x%08lX\r\n", assert_addr);
       printf("--------------------------------\r\n");
-      HAL_Delay(100);
   }
   HAL_PWR_DisableBkUpAccess();
 }
