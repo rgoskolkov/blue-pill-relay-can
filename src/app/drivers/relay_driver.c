@@ -2,7 +2,6 @@
 #include "board_config.h"
 #include <string.h>
 #include "modbus_adapter.h"
-#include "task.h"
 
 static uint8_t relay_states_local[NUM_SWITCHES];
 
@@ -24,9 +23,7 @@ static void Relay_SetState(uint8_t relay_number, uint8_t state)
     state ? Board_Relay_On(relay_number) : Board_Relay_Off(relay_number);
     if (syncTaskHandle != NULL)
     {
-        // This function can be called from an ISR, so use the ISR-safe version.
-        // A context switch is not forced here; the scheduler will run at the next tick.
-        xTaskNotifyFromISR(syncTaskHandle, FLAG_SYNC_FROM_RELAY, eSetBits, NULL);
+        osThreadFlagsSet(syncTaskHandle, FLAG_SYNC_FROM_RELAY);
     }
 }
 
