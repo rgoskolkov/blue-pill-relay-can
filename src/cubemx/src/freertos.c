@@ -76,7 +76,7 @@ const osThreadAttr_t syncTask_attributes = {
 osThreadId_t monitorTaskHandle;
 const osThreadAttr_t monitorTask_attributes = {
   .name = "monitorTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 8,
+  .stack_size = configMINIMAL_STACK_SIZE * 10,
   .priority = (osPriority_t) osPriorityLow1,
 };
 

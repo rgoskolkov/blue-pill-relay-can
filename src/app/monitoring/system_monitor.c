@@ -4,19 +4,55 @@
 #include "Modbus.h"
 #include <string.h>
 #include <stdio.h>
+#include "cmsis_os.h"
+#include "ModbusConfig.h"
+
+// Символы из linker-скрипта для анализа памяти
+extern uint32_t _sdata; // Начало .data
+extern uint32_t _edata; // Конец .data
+extern uint32_t _sbss;  // Начало .bss
+extern uint32_t _ebss;  // Конец .bss
+extern uint32_t _estack; // Конец RAM
+
+// Доступ к атрибутам задач для получения размеров стека
+extern const osThreadAttr_t ledTask_attributes;
+extern const osThreadAttr_t syncTask_attributes;
+extern const osThreadAttr_t monitorTask_attributes;
+extern const osThreadAttr_t inputTask_attributes;
+extern const osThreadAttr_t myTaskModbusA_attributes; // Атрибуты задачи из библиотеки Modbus
+
+// Вспомогательная функция для получения общего размера стека задачи по ее имени
+uint32_t get_task_stack_size(const char* task_name) {
+    if (strcmp(task_name, ledTask_attributes.name) == 0) {
+        return ledTask_attributes.stack_size;
+    }
+    if (strcmp(task_name, syncTask_attributes.name) == 0) {
+        return syncTask_attributes.stack_size;
+    }
+    if (strcmp(task_name, monitorTask_attributes.name) == 0) {
+        return monitorTask_attributes.stack_size;
+    }
+    if (strcmp(task_name, inputTask_attributes.name) == 0) {
+        return inputTask_attributes.stack_size;
+    }
+    if (strcmp(task_name, myTaskModbusA_attributes.name) == 0) {
+        return MODBUS_SLAVE_STACK_SIZE;
+    }
+    return 0; // Задача не найдена
+}
 
 // Эти переменные должны быть доступны из других модулей
 extern modbusHandler_t mHandler;
 
 const char* taskStateToString(eTaskState state) {
     switch(state) {
-        case eRunning:   return "Running";
+        case eRunning:   return "Run";
         case eReady:     return "Ready";
-        case eBlocked:   return "Blocked";
-        case eSuspended: return "Suspended";
-        case eDeleted:   return "Deleted";
-        case eInvalid:   return "Invalid";
-        default:         return "Unknown";
+        case eBlocked:   return "Blc";
+        case eSuspended: return "Spd";
+        case eDeleted:   return "Del";
+        case eInvalid:   return "Inv";
+        default:         return "Uwn";
     }
 }
 
@@ -80,18 +116,32 @@ void system_monitor(void) {
     p += written;
     len -= written;
 
-    if (task_count <= 6) {
+    if (task_count <= 10) {
         unsigned long _total_runtime;
         TaskStatus_t _task_status_array[task_count];
         task_count = uxTaskGetSystemState(_task_status_array, task_count, &_total_runtime);
 
+        written = snprintf(p, len, "Name\t\tState\tPrio\tStackLeft\tTotal\tUsed%%\r\n");
+        if (written > 0) { p += written; len -= written; }
+        written = snprintf(p, len, "--------------------------------------------------------------------------\r\n");
+        if (written > 0) { p += written; len -= written; }
+
+
         for (int i = 0; i < task_count; i++) {
-            written = snprintf(p, len, "[TASK] %-20s: %-9s, Prio:%lu, StackHWM:%6u, Runtime: %lu\r\n",
+            uint32_t total_stack = get_task_stack_size(_task_status_array[i].pcTaskName);
+            uint32_t hwm_bytes = _task_status_array[i].usStackHighWaterMark * sizeof(StackType_t);
+            uint32_t used_percent = 0;
+            if (total_stack > 0) {
+                used_percent = ((total_stack - hwm_bytes) * 100) / total_stack;
+            }
+
+            written = snprintf(p, len, "%-10s\t%-3s\t%lu\t%lu\t\t%lu\t%lu%%\r\n",
                                _task_status_array[i].pcTaskName,
                                taskStateToString(_task_status_array[i].eCurrentState),
                                _task_status_array[i].uxCurrentPriority,
-                               _task_status_array[i].usStackHighWaterMark,
-                               _task_status_array[i].ulRunTimeCounter);
+                               hwm_bytes,
+                               total_stack,
+                               used_percent);
             if (written > 0) {
                 p += written;
                 len -= written;
@@ -100,8 +150,27 @@ void system_monitor(void) {
     }
 
     // Информация о куче
-    written = snprintf(p, len, "[HEAP] Current Free: %u, Minimal Ever Free: %u\r\n",
-                       xPortGetFreeHeapSize(), xPortGetMinimumEverFreeHeapSize());
+    written = snprintf(p, len, "[HEAP] Total: %u, Current Free: %u, Minimal Ever Free: %u\r\n",
+                       (unsigned int)configTOTAL_HEAP_SIZE,
+                       (unsigned int)xPortGetFreeHeapSize(),
+                       (unsigned int)xPortGetMinimumEverFreeHeapSize());
+    if (written > 0) {
+        p += written;
+        len -= written;
+    }
+
+    // Общая информация о RAM
+    uint32_t total_ram = (uint32_t)&_estack - 0x20000000;
+    uint32_t static_plus_bss = (uint32_t)&_ebss - (uint32_t)&_sdata;
+    uint32_t heap_size = (unsigned int)configTOTAL_HEAP_SIZE;
+    uint32_t static_only = static_plus_bss - heap_size;
+    uint32_t free_for_stack = total_ram - static_plus_bss;
+
+    written = snprintf(p, len, "[RAM] Total: %lu | Static: %lu | Heap: %lu | Free for Stacks: %lu\r\n",
+                       total_ram,
+                       static_only,
+                       heap_size,
+                       free_for_stack);
     if (written > 0) {
         p += written;
         len -= written;
