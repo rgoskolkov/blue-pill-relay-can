@@ -29,6 +29,7 @@
 #include "system_monitor.h"
 #include "board_config.h"
 #include <string.h>
+#include "input_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +49,14 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+osMessageQueueId_t switchEventQueueHandle;
+
+osThreadId_t inputTaskHandle;
+const osThreadAttr_t inputTask_attributes = {
+  .name = "inputTask",
+  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE END Variables */
 
 const osThreadAttr_t ledTask_attributes = {
@@ -102,11 +111,16 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
+  const osMessageQueueAttr_t switchEventQueue_attributes = {
+    .name = "switchEventQueue"
+  };
+  switchEventQueueHandle = osMessageQueueNew(16, sizeof(uint8_t), &switchEventQueue_attributes);
   /* USER CODE END RTOS_QUEUES */
 
   /* USER CODE BEGIN RTOS_THREADS */
   osThreadNew(led_task, NULL, &ledTask_attributes);
   syncTaskHandle = osThreadNew(sync_task, NULL, &syncTask_attributes);
+  inputTaskHandle = osThreadNew(input_task, NULL, &inputTask_attributes);
   #if MONITOR_TASK == 1
     osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
   #endif  

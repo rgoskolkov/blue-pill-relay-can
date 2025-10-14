@@ -28,7 +28,7 @@
 #define TIMEOUT_MODBUS 1000 // Timeout for master query (in ticks)
 #define MAX_M_HANDLERS 2    //Maximum number of modbus handlers that can work concurrently
 #define MAX_TELEGRAMS 2     //Max number of Telegrams in master queue
-#define MODBUS_SLAVE_STACK_SIZE (256 * 4) // Stack size for the slave task
+#define MODBUS_SLAVE_STACK_SIZE (512 * 4) // Stack size for the slave task
 
 #if ENABLE_TCP == 1
 #define NUMBERTCPCONN   4   // Maximum number of simultaneous client connections, it should be equal or less than LWIP configuration

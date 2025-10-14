@@ -147,11 +147,12 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 
     		if(mHandlers[i]->xTypeHW == USART_HW_DMA)
     		{
+    		         printf("[MDB_ADAPTER] UART Error: 0x%lX\r\n", huart->ErrorCode);
     			while(HAL_UARTEx_ReceiveToIdle_DMA(mHandlers[i]->port, mHandlers[i]->xBufferRX.uxBuffer, MAX_BUFFER) != HAL_OK)
     		    {
     					HAL_UART_DMAStop(mHandlers[i]->port);
-   				}
-				__HAL_DMA_DISABLE_IT(mHandlers[i]->port->hdmarx, DMA_IT_HT); // we don't need half-transfer interrupt
+    			}
+    __HAL_DMA_DISABLE_IT(mHandlers[i]->port->hdmarx, DMA_IT_HT); // we don't need half-transfer interrupt
 
     		}
 
@@ -163,37 +164,49 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-	    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-		/* Modbus RTU RX callback BEGIN */
-	    int i;
-	    for (i = 0; i < numberHandlers; i++ )
-	    {
-	    	if (mHandlers[i]->port == huart  )
-	    	{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    /* Modbus RTU RX callback BEGIN */
+    int i;
+    for (i = 0; i < numberHandlers; i++) {
+        if (mHandlers[i]->port == huart) {
+            if (mHandlers[i]->xTypeHW == USART_HW_DMA) {
+                // BEFORE anything else, check for a buffer overflow.
+                if (Size >= MAX_BUFFER) {
+                    // This is a critical error. The DMA may have written past the buffer and corrupted memory.
+                    // We will log this, clear the buffer, and restart reception, but the system may be unstable.
+                    printf("[MDB_ADAPTER] CRITICAL: DMA buffer overflow detected! Received %u bytes, buffer size is %d. Frame discarded.\r\n", Size, MAX_BUFFER);
+                    
+                    // Clear the ring buffer state to prevent processing of corrupted data
+                    mHandlers[i]->xBufferRX.u8start = 0;
+                    mHandlers[i]->xBufferRX.u8end = 0;
+                    mHandlers[i]->xBufferRX.u8available = 0;
+                    mHandlers[i]->xBufferRX.overflow = true; // Mark as overflowed
 
+                } else if (Size > 0) { // Check if we have received any valid bytes
+                    // The DMA has written 'Size' bytes into the buffer.
+                    // We need to update the ring buffer's pointers to reflect this.
+                    mHandlers[i]->xBufferRX.u8end = Size;
+                    mHandlers[i]->xBufferRX.u8available = Size;
+                    mHandlers[i]->xBufferRX.u8start = 0; // DMA always writes from the beginning in this mode.
+                    mHandlers[i]->xBufferRX.overflow = false;
 
-	    		if(mHandlers[i]->xTypeHW == USART_HW_DMA)
-	    		{
-	    			if(Size) //check if we have received any byte
-	    			{
-		    				mHandlers[i]->xBufferRX.u8available = Size;
-		    				mHandlers[i]->xBufferRX.overflow = false;
+                    // Notify the Modbus task that a valid frame has arrived.
+                    xTaskNotifyFromISR(mHandlers[i]->myTaskModbusAHandle, 0, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+                }
 
-		    				while(HAL_UARTEx_ReceiveToIdle_DMA(mHandlers[i]->port, mHandlers[i]->xBufferRX.uxBuffer, MAX_BUFFER) != HAL_OK)
-		    				{
-		    					HAL_UART_DMAStop(mHandlers[i]->port);
-
-		    				}
-		    				__HAL_DMA_DISABLE_IT(mHandlers[i]->port->hdmarx, DMA_IT_HT); // we don't need half-transfer interrupt
-
-		    				xTaskNotifyFromISR(mHandlers[i]->myTaskModbusAHandle, 0 , eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
-	    			}
-	    		}
-
-	    		break;
-	    	}
-	    }
-	    portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+                // Always re-arm the DMA for the next reception, regardless of what happened.
+                if (HAL_UARTEx_ReceiveToIdle_DMA(mHandlers[i]->port, mHandlers[i]->xBufferRX.uxBuffer, MAX_BUFFER) != HAL_OK) {
+                    // If re-arming fails, something is seriously wrong. Try to stop and restart.
+                    HAL_UART_DMAStop(mHandlers[i]->port);
+                    HAL_UARTEx_ReceiveToIdle_DMA(mHandlers[i]->port, mHandlers[i]->xBufferRX.uxBuffer, MAX_BUFFER);
+                }
+                // We don't need the half-transfer interrupt.
+                __HAL_DMA_DISABLE_IT(mHandlers[i]->port->hdmarx, DMA_IT_HT);
+            }
+            break;
+        }
+    }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 #endif

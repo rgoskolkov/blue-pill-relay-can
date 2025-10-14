@@ -65,6 +65,21 @@ void process_switch_event(uint8_t i)
     prev_states[i] = current_state;
 }
 
+void input_task(void *argument)
+{
+    uint8_t switch_index;
+    osStatus_t status;
+
+    for(;;)
+    {
+        status = osMessageQueueGet(switchEventQueueHandle, &switch_index, NULL, osWaitForever);
+        if (status == osOK)
+        {
+            process_switch_event(switch_index);
+        }
+    }
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     uint8_t switch_index = 0;
@@ -80,5 +95,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case SWITCH8_PIN: switch_index = 7; break;
         default: return; // Not a switch pin
     }
-    process_switch_event(switch_index);
+    
+    if (switchEventQueueHandle != NULL)
+    {
+        osMessageQueuePut(switchEventQueueHandle, &switch_index, 0U, 0U);
+    }
 }
