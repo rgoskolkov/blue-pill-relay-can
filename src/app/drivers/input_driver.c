@@ -93,8 +93,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case SWITCH6_PIN: switch_index = 5; break;
         case SWITCH7_PIN: switch_index = 6; break;
         case SWITCH8_PIN: switch_index = 7; break;
+        case USER_KEY_Pin: switch_index = 8; break;
         default: return; // Not a switch pin
     }
+    led_signal_ack();
+
+    if (switch_index == 8)
+    {
+        led_signal_ack();
+    }
+    
     
     if (switchEventQueueHandle != NULL)
     {

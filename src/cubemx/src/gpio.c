@@ -54,8 +54,11 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RELAY_VCC_Pin|RELAY8_Pin|RELAY7_Pin|RELAY6_Pin
-                          |RELAY5_Pin|RELAY4_Pin|RELAY3_Pin|RELAY2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(BUTTON_GND_GPIO_Port, BUTTON_GND_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, RELAY8_Pin|RELAY7_Pin|RELAY6_Pin|RELAY5_Pin
+                          |RELAY4_Pin|RELAY3_Pin|RELAY2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RELAY1_GPIO_Port, RELAY1_Pin, GPIO_PIN_SET);
@@ -70,12 +73,18 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : RELAY_VCC_Pin */
-  GPIO_InitStruct.Pin = RELAY_VCC_Pin;
+  /*Configure GPIO pin : BUTTON_GND_Pin */
+  GPIO_InitStruct.Pin = BUTTON_GND_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(RELAY_VCC_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(BUTTON_GND_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USER_KEY_Pin */
+  GPIO_InitStruct.Pin = USER_KEY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(USER_KEY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RELAY8_Pin RELAY7_Pin RELAY6_Pin RELAY5_Pin
                            RELAY4_Pin RELAY3_Pin RELAY2_Pin */
@@ -115,6 +124,9 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 8, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI3_IRQn, 8, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
