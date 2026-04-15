@@ -1,11 +1,10 @@
 #include "system_monitor.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "Modbus.h"
+#include "stm32f1xx_hal.h"
 #include <string.h>
 #include <stdio.h>
 #include "cmsis_os.h"
-#include "ModbusConfig.h"
 
 // Символы из linker-скрипта для анализа памяти
 extern uint32_t _sdata; // Начало .data
@@ -16,18 +15,13 @@ extern uint32_t _estack; // Конец RAM
 
 // Доступ к атрибутам задач для получения размеров стека
 extern const osThreadAttr_t ledTask_attributes;
-extern const osThreadAttr_t syncTask_attributes;
 extern const osThreadAttr_t monitorTask_attributes;
 extern const osThreadAttr_t inputTask_attributes;
-extern const osThreadAttr_t myTaskModbusA_attributes; // Атрибуты задачи из библиотеки Modbus
 
 // Вспомогательная функция для получения общего размера стека задачи по ее имени
 uint32_t get_task_stack_size(const char* task_name) {
     if (strcmp(task_name, ledTask_attributes.name) == 0) {
         return ledTask_attributes.stack_size;
-    }
-    if (strcmp(task_name, syncTask_attributes.name) == 0) {
-        return syncTask_attributes.stack_size;
     }
     if (strcmp(task_name, monitorTask_attributes.name) == 0) {
         return monitorTask_attributes.stack_size;
@@ -35,14 +29,8 @@ uint32_t get_task_stack_size(const char* task_name) {
     if (strcmp(task_name, inputTask_attributes.name) == 0) {
         return inputTask_attributes.stack_size;
     }
-    if (strcmp(task_name, myTaskModbusA_attributes.name) == 0) {
-        return MODBUS_SLAVE_STACK_SIZE;
-    }
     return 0; // Задача не найдена
 }
-
-// Эти переменные должны быть доступны из других модулей
-extern modbusHandler_t mHandler;
 
 const char* taskStateToString(eTaskState state) {
     switch(state) {

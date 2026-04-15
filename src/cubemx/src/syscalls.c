@@ -30,11 +30,14 @@
 #include <sys/time.h>
 #include <sys/times.h>
 #include "board_config.h"
+#include "usbd_cdc_if.h"
+#include "usb_device.h"
 
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
 extern int __io_getchar(void) __attribute__((weak));
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 char *__env[1] = { 0 };
 char **environ = __env;
@@ -66,35 +69,34 @@ void _exit (int status)
 
 __attribute__((weak)) int _read(int file, char *ptr, int len)
 {
-  (void)file;
-  #if UART_DEBUG == 1
     (void)ptr;
     (void)len;
     return -1;
-  #else
-    int DataIdx;
-    for (DataIdx = 0; DataIdx < len; DataIdx++)
-    {
-      *ptr++ = __io_getchar();
-    }
-    return len;
-  #endif
 }
 
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
-    (void)file;
-#if UART_DEBUG == 1
-       HAL_UART_Transmit(&DEBUG_UART_HANDLE, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+       // Проверяем, что USB сконфигурирован
+       if (hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED) {
+           return len;  // USB не подключен, просто возвращаем успех
+       }
+       
+       // Отправляем через USB CDC с ограничением повторных попыток
+       uint8_t result;
+       int retries = 0;
+       do {
+           result = CDC_Transmit_FS((uint8_t*)ptr, len);
+           if (result == USBD_BUSY) {
+               // USB занят, небольшая задержка и повтор
+               for (volatile int i = 0; i < 10000; i++);
+               retries++;
+               if (retries > 100) {
+                   return len;  // Таймаут, не блокируем систему
+               }
+           }
+       } while (result == USBD_BUSY);
+
        return len;
-#else
-      int DataIdx;
-      for (DataIdx = 0; DataIdx < len; DataIdx++)
-      {
-        __io_putchar(*ptr++);
-      }
-      return len;
-#endif
 }
 
 int _close(int file)

@@ -8,8 +8,16 @@
 #include "main.h"
 #include <stdint.h>
 
-#ifndef MODBUS_UART_STOPBITS
-#define MODBUS_UART_STOPBITS 1
+/* =================================================================================
+   CAN Configuration
+==================================================================================*/
+
+#ifndef CAN_NODE_ID_DEFAULT
+#define CAN_NODE_ID_DEFAULT 1U
+#endif
+
+#ifndef CAN_BAUDRATE
+#define CAN_BAUDRATE 125000U
 #endif
 
 /* Параметры по умолчанию (можно переопределить через -D в platformio.ini) */
@@ -17,21 +25,8 @@
 #define NUM_SWITCHES 8U
 #endif
 
-#ifndef MODBUS_BAUDRATE
-#define MODBUS_BAUDRATE 115200U
-#endif
-
-#ifndef MODBUS_SLAVE_ID
-#define MODBUS_SLAVE_ID 1U
-#endif
-
-/* MODBUS_UART_PARITY: 0 = NONE, 1 = ODD, 2 = EVEN */
-#ifndef MODBUS_UART_PARITY
-#define MODBUS_UART_PARITY 0
-#endif
-
-#ifndef UART_DEBUG
-#define UART_DEBUG 1
+#ifndef NUM_RELAYS
+#define NUM_RELAYS 8U
 #endif
 
 #ifndef MONITOR_TASK
@@ -77,19 +72,6 @@
 #define SWITCH7_PORT SWITCH7_GPIO_Port
 #define SWITCH8_PIN SWITCH8_Pin
 #define SWITCH8_PORT SWITCH8_GPIO_Port
-
-
-/* =================================================================================
-   Hardware Peripheral Mapping
-==================================================================================*/
-
-// Declare UART handles defined in usart.c
-extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart3;
-
-// Map logical names to physical UART handles
-#define MODBUS_UART_HANDLE huart3
-#define DEBUG_UART_HANDLE  huart1
 
 
 /* =================================================================================

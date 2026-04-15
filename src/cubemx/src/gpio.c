@@ -109,11 +109,17 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RELAY_GND_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SWITCH1_Pin SWITCH2_Pin SWITCH3_Pin */
-  GPIO_InitStruct.Pin = SWITCH1_Pin|SWITCH2_Pin|SWITCH3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  /*Configure GPIO pins : SWITCH1_Pin SWITCH2_Pin */
+  GPIO_InitStruct.Pin = SWITCH1_Pin|SWITCH2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SWITCH3_Pin */
+  GPIO_InitStruct.Pin = SWITCH3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(SWITCH3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SWITCH4_Pin SWITCH5_Pin SWITCH6_Pin SWITCH7_Pin
                            SWITCH8_Pin */

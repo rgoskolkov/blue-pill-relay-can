@@ -1,13 +1,21 @@
 #include "main.h"
 #include "gpio.h"
 #include "cmsis_os.h"
-#include "dma.h"
-#include "usart.h"
 #include "tim.h"
 #include "stm32f1xx.h"
 #include <stdio.h>
 #include "main_application.h"
 #include "system_monitor.h"
+#include "can.h"
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
+#include <string.h>
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+extern USBD_HandleTypeDef hUsbDeviceFS;
+/* USER CODE END Includes */
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
@@ -25,28 +33,48 @@ void MX_FREERTOS_Init(void);
   */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_TIM1_Init();
-  MX_USART3_UART_Init();
-  MX_USART1_UART_Init();
-  application_init(); // инициализация приложения
-  print_fault_details();
   
-  /* Init scheduler */
+  /* LED мигает пока USB не инициализирован */
+  for(int i = 0; i < 3; i++) {
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    HAL_Delay(200);
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+    HAL_Delay(200);
+  }
+  
+  MX_CAN_Init();
+  application_init();
+  MX_USB_DEVICE_Init();
+  
+  /* Ждём USB enumeration - 5 секунд */
+  for(int i = 0; i < 50; i++) {
+    if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) break;
+    HAL_Delay(100);
+  }
+  
+  /* Если USB сконфигурирован - LED горит */
+  if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) {
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    /* Отправляем приветствие */
+    char msg[] = "USB CDC OK!\r\n";
+    CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+  } else {
+    /* USB не работает - быстрое мигание */
+    while(1) {
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+      HAL_Delay(50);
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      HAL_Delay(50);
+    }
+  }
+
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 
-  /* Start scheduler */
   osKernelStart();
  
   /* We should never get here as control is now taken by the scheduler */
@@ -70,6 +98,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
    * in the RCC_OscInitTypeDef structure.
@@ -96,6 +125,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }

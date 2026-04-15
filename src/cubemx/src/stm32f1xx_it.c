@@ -125,13 +125,12 @@ void HardFault_c_handler(uint32_t *stacked_frame) {
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern DMA_HandleTypeDef hdma_usart3_rx;
-extern DMA_HandleTypeDef hdma_usart3_tx;
-extern UART_HandleTypeDef huart3;
+extern PCD_HandleTypeDef hpcd_USB_FS;
+extern CAN_HandleTypeDef hcan;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
-
+#include "usb_device.h"
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -305,31 +304,33 @@ void EXTI4_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 channel2 global interrupt.
+  * @brief This function handles USB high priority or CAN TX interrupts.
   */
-void DMA1_Channel2_IRQHandler(void)
+void USB_HP_CAN1_TX_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Channel2_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel2_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart3_tx);
-  /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel2_IRQn 1 */
+  /* USB HIGH PRIORITY - обрабатываем первым, таймаут критичен */
+  HAL_PCD_IRQHandler(&hpcd_USB_FS);
+  
+  /* CAN TX complete - обрабатываем если есть pending (запрос завершён) */
+  if (hcan.Instance->TSR & (CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2))
+  {
+    HAL_CAN_IRQHandler(&hcan);
+  }
 }
 
 /**
-  * @brief This function handles DMA1 channel3 global interrupt.
+  * @brief This function handles USB low priority or CAN RX0 interrupts.
   */
-void DMA1_Channel3_IRQHandler(void)
+void USB_LP_CAN1_RX0_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA1_Channel3_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel3_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart3_rx);
-  /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel3_IRQn 1 */
+  /* USB LOW PRIORITY - обрабатываем первым */
+  HAL_PCD_IRQHandler(&hpcd_USB_FS);
+  
+  /* CAN RX0 - обрабатываем если есть pending (сообщение в FIFO) */
+  if (hcan.Instance->RF0R & CAN_RF0R_FMP0)
+  {
+    HAL_CAN_IRQHandler(&hcan);
+  }
 }
 
 /**
@@ -352,9 +353,26 @@ void EXTI9_5_IRQHandler(void)
   {
     HAL_GPIO_EXTI_IRQHandler(SWITCH8_Pin);
   }
+if (__HAL_GPIO_EXTI_GET_IT(SWITCH1_Pin) != RESET) {
+HAL_GPIO_EXTI_IRQHandler(SWITCH1_Pin);
+}
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
 
   /* USER CODE END EXTI9_5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM4 global interrupt.
+  */
+void TIM4_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM4_IRQn 0 */
+
+  /* USER CODE END TIM4_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim4);
+  /* USER CODE BEGIN TIM4_IRQn 1 */
+
+  /* USER CODE END TIM4_IRQn 1 */
 }
 
 /**
@@ -380,33 +398,6 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */
-}
-
-/**
-  * @brief This function handles TIM4 global interrupt.
-  */
-void TIM4_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM4_IRQn 0 */
-
-  /* USER CODE END TIM4_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim4);
-  /* USER CODE BEGIN TIM4_IRQn 1 */
-
-  /* USER CODE END TIM4_IRQn 1 */
-}
-
-/**
-  * @brief This function handles USART3 global interrupt.
-  */
-void USART3_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART3_IRQn 0 */
-	 /* USER CODE END USART3_IRQn 0 */
-	HAL_UART_IRQHandler(&huart3);
-	 /* USER CODE BEGIN USART3_IRQn 1 */
-
-	 /* USER CODE END USART3_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

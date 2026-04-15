@@ -82,20 +82,16 @@ void Error_Handler(void);
 #define RELAY1_GPIO_Port GPIOB
 #define RELAY_GND_Pin GPIO_PIN_1
 #define RELAY_GND_GPIO_Port GPIOB
-#define USART_TX_B10_Pin GPIO_PIN_10
-#define USART_TX_B10_GPIO_Port GPIOB
-#define USART_RX_B11_Pin GPIO_PIN_11
-#define USART_RX_B11_GPIO_Port GPIOB
-#define USART_TX_PA9_Pin GPIO_PIN_9
-#define USART_TX_PA9_GPIO_Port GPIOA
-#define USART_RX_PA10_Pin GPIO_PIN_10
-#define USART_RX_PA10_GPIO_Port GPIOA
-#define SWITCH1_Pin GPIO_PIN_11
+#define SWITCH1_Pin GPIO_PIN_9
 #define SWITCH1_GPIO_Port GPIOA
-#define SWITCH1_EXTI_IRQn EXTI15_10_IRQn
-#define SWITCH2_Pin GPIO_PIN_12
+#define SWITCH1_EXTI_IRQn EXTI9_5_IRQn
+#define SWITCH2_Pin GPIO_PIN_10
 #define SWITCH2_GPIO_Port GPIOA
 #define SWITCH2_EXTI_IRQn EXTI15_10_IRQn
+#define USB_COM_DM_Pin GPIO_PIN_11
+#define USB_COM_DM_GPIO_Port GPIOA
+#define USB_COM_DP_Pin GPIO_PIN_12
+#define USB_COM_DP_GPIO_Port GPIOA
 #define SWITCH3_Pin GPIO_PIN_15
 #define SWITCH3_GPIO_Port GPIOA
 #define SWITCH3_EXTI_IRQn EXTI15_10_IRQn
@@ -114,6 +110,10 @@ void Error_Handler(void);
 #define SWITCH8_Pin GPIO_PIN_7
 #define SWITCH8_GPIO_Port GPIOB
 #define SWITCH8_EXTI_IRQn EXTI9_5_IRQn
+#define CAN_BUS_RX_Pin GPIO_PIN_8
+#define CAN_BUS_RX_GPIO_Port GPIOB
+#define CAN_BUS_TX_Pin GPIO_PIN_9
+#define CAN_BUS_TX_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

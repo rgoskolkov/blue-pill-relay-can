@@ -25,7 +25,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led_driver.h"
-#include "modbus_adapter.h"
 #include "system_monitor.h"
 #include "board_config.h"
 #include <string.h>
@@ -54,45 +53,29 @@ osMessageQueueId_t switchEventQueueHandle;
 osThreadId_t inputTaskHandle;
 const osThreadAttr_t inputTask_attributes = {
   .name = "inputTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .stack_size = configMINIMAL_STACK_SIZE * 2,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE END Variables */
 
 const osThreadAttr_t ledTask_attributes = {
   .name = "ledTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 6,
+  .stack_size = configMINIMAL_STACK_SIZE * 3,
   .priority = (osPriority_t) osPriorityLow,
-};
-
-
-osThreadId_t syncTaskHandle;
-const osThreadAttr_t syncTask_attributes = {
-  .name = "syncTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 6,
-  .priority = (osPriority_t) osPriorityLow5,
 };
 
 osThreadId_t monitorTaskHandle;
 const osThreadAttr_t monitorTask_attributes = {
   .name = "monitorTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 10,
+  .stack_size = configMINIMAL_STACK_SIZE * 4,
   .priority = (osPriority_t) osPriorityLow1,
 };
-
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
 
-void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
-
-/**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
@@ -119,13 +102,11 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   osThreadNew(led_task, NULL, &ledTask_attributes);
-  syncTaskHandle = osThreadNew(sync_task, NULL, &syncTask_attributes);
   inputTaskHandle = osThreadNew(input_task, NULL, &inputTask_attributes);
   #if MONITOR_TASK == 1
     osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
-  #endif  
-  //   Avoid double-creating it here; call modbus_adapter_init() before scheduler start
-  //   so the library can create its own task. */
+  #endif
+  /* can_adapter_init() вызывается из application_init() */
  /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -140,11 +121,14 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
     printf("vApplicationStackOverflowHook: %s\n", pcTaskName);
 
-    int blink_count = 5; // По умолчанию 5 миганий для неизвестной задачи
+    int blink_count = 5;
 
-    if (strcmp(pcTaskName, "led_task") == 0) {
+    if (strcmp(pcTaskName, "ledTask") == 0) {
         blink_count = 1;
-    } else if (strcmp(pcTaskName, "TaskModbusSlave") == 0) { // Имя задачи из библиотеки modbus
+    } else if (strcmp(pcTaskName, "inputTask") == 0) {
+        blink_count = 2;
+    }
+    else if (strcmp(pcTaskName, "monitorTask") == 0) {
         blink_count = 3;
     }
     dead_hand(200, blink_count);
@@ -152,9 +136,7 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 
 void vApplicationMallocFailedHook(void)
 {
-   /* This function will be called if a call to pvPortMalloc() fails. */
-   /* Blink fast pattern for malloc failed */
-  printf("vApplicationMallocFailedHook\n");
-  dead_hand(500, 4);
+   printf("vApplicationMallocFailedHook\n");
+   dead_hand(500, 4);
 }
 /* USER CODE END Application */
