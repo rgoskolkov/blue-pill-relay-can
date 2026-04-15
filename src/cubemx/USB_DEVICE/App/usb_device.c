@@ -27,7 +27,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN Includes */
-extern PCD_HandleTypeDef hpcd_USB_FS;
+
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -86,7 +86,14 @@ void MX_USB_DEVICE_Init(void)
   }
 
   /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
-
+  // GPIOA->CRH &= 0XFFF00FFF;      // очищаем конфигурацию PA11/PA12
+  // GPIOA->CRH |= 0X00033000;      // режим output push-pull (скорость 50 MHz)
+  // GPIOA->ODR &= ~(GPIO_PIN_11);  // PA11 = 0
+  // GPIOA->ODR &= ~(GPIO_PIN_12);  // PA12 = 0
+  // HAL_Delay(100);                 // задержка
+  // // 2. Возвращаем пинам режим альтернативной функции (для USB)
+  // GPIOA->CRH &= 0XFFF00FFF;
+  // GPIOA->CRH |= 0X00088000;      // режим AF push-pull (скорость 50 MHz)
   /* USER CODE END USB_DEVICE_Init_PostTreatment */
 }
 

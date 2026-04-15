@@ -37,41 +37,13 @@ int main(void)
   SystemClock_Config();
   MX_GPIO_Init();
   MX_TIM1_Init();
-  
-  /* LED мигает пока USB не инициализирован */
-  for(int i = 0; i < 3; i++) {
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-    HAL_Delay(200);
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-    HAL_Delay(200);
-  }
-  
-  MX_CAN_Init();
-  application_init();
+  //MX_CAN_Init();
   MX_USB_DEVICE_Init();
-  
-  /* Ждём USB enumeration - 5 секунд */
-  for(int i = 0; i < 50; i++) {
-    if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) break;
-    HAL_Delay(100);
-  }
-  
-  /* Если USB сконфигурирован - LED горит */
-  if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) {
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-    /* Отправляем приветствие */
-    char msg[] = "USB CDC OK!\r\n";
-    CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-  } else {
-    /* USB не работает - быстрое мигание */
-    while(1) {
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-      HAL_Delay(50);
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-      HAL_Delay(50);
-    }
-  }
+  // /* Пауза для стабилизации */
+  HAL_Delay(500);
 
+  application_init();
+  
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 
@@ -83,6 +55,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    Board_Delay(1000);
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    printf("\r\n--- APPLICATION STARTUP ---\r\n");
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

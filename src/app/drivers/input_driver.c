@@ -4,65 +4,29 @@
 #include "led_driver.h"
 #include "stdbool.h"
 #include "relay_driver.h"
+#define DEBOUNCE_POLL_PERIOD_MS 20
+#define DEBOUNCE_TICKS (DEBOUNCE_MS / DEBOUNCE_POLL_PERIOD_MS)
 
-#define LONG_PRESS_TIME_MS 2000
-
-static uint8_t prev_states[NUM_SWITCHES];
-static uint32_t last_event_ts[NUM_SWITCHES];
-static uint32_t press_start_ts[NUM_SWITCHES];
-static bool switch_state[NUM_SWITCHES];
-
-static bool debounce_check(uint8_t idx)
-{
-    if (idx >= NUM_SWITCHES) return false;
-    uint32_t now = Board_GetTick();
-    return (now - last_event_ts[idx]) > DEBOUNCE_MS;
-}
+static uint8_t debounce_counter[NUM_SWITCHES];
+static uint8_t stable_state[NUM_SWITCHES];
 
 void Input_Init(void)
 {
-    memset(prev_states, 0xFF, sizeof(prev_states));
-    memset(last_event_ts, 0, sizeof(last_event_ts));
-    memset(press_start_ts, 0, sizeof(press_start_ts));
-    memset(switch_state, 0, sizeof(switch_state));
+    memset(debounce_counter, 0, sizeof(debounce_counter));
+    for(int i=0; i<NUM_SWITCHES; i++)
+    {
+        stable_state[i] = Board_Switch_Read(i);
+        if (stable_state[i]) {
+            debounce_counter[i] = DEBOUNCE_TICKS;
+        }
+    }
 }
 
 void process_switch_event(uint8_t i)
 {
     if (i >= NUM_SWITCHES) return;
-
-    uint32_t now = Board_GetTick();
-
-    if (!debounce_check(i)) {
-        return;
-    }
-    
-    uint8_t current_state = Board_Switch_Read(i);
-
-    // printf("Switch %d interrupt, state: %d\n", i, current_state);
-
-    last_event_ts[i] = now;
-
-    if (current_state == 1) // Нажатие (переход в LOW)
-    {
-        press_start_ts[i] = now;
-        // Мгновенное переключение
-        switch_state[i] = !switch_state[i];
-        led_signal_ack();
-        switch_state[i] ? relay_on(i) : relay_off(i);
-    }
-    else // Отпускание (переход в HIGH)
-    {
-        uint32_t press_duration = now - press_start_ts[i];
-        if (press_duration >= LONG_PRESS_TIME_MS)
-        {
-            // Долгое нажатие - отменяем действие
-            switch_state[i] = !switch_state[i];
-            led_signal_ack();
-            switch_state[i] ? relay_on(i) : relay_off(i);
-        }
-    }
-    prev_states[i] = current_state;
+    led_signal_ack();
+    relay_toggle(i);
 }
 
 void input_task(void *argument)

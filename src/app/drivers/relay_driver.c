@@ -41,3 +41,4 @@ uint8_t Relay_GetState(uint8_t relay_number)
 void relay_init(void)         { Relay_Init(); }
 void relay_on(uint8_t n)      { Relay_SetState(n, 1); }
 void relay_off(uint8_t n)     { Relay_SetState(n, 0); }
+void relay_toggle(uint8_t relay_number) { Relay_SetState(relay_number, !Relay_GetState(relay_number)); }

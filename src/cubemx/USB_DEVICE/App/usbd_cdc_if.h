@@ -49,7 +49,6 @@
   * @{
   */
 /* Define size for the receive and transmit buffer over CDC */
-/* Уменьшено для экономии RAM (всего 20KB на STM32F103C8) */
 #define APP_RX_DATA_SIZE  256
 #define APP_TX_DATA_SIZE  256
 /* USER CODE BEGIN EXPORTED_DEFINES */

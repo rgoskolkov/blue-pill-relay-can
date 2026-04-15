@@ -51,8 +51,6 @@
   #include <stdint.h>
   extern uint32_t SystemCoreClock;
 /* USER CODE BEGIN 0 */
-  // extern void configureTimerForRunTimeStats(void);
-  // extern unsigned long getRunTimeCounterValue(void);
 /* USER CODE END 0 */
 #endif
 #ifndef CMSIS_device_header
@@ -68,7 +66,7 @@
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )
 #define configMINIMAL_STACK_SIZE                 ((uint16_t)128)
-#define configTOTAL_HEAP_SIZE                    ((size_t)12288)
+#define configTOTAL_HEAP_SIZE                    ((size_t)5120)
 #define configMAX_TASK_NAME_LEN                  ( 16 )
 #define configGENERATE_RUN_TIME_STATS            0
 #define configUSE_TRACE_FACILITY                 1
@@ -165,8 +163,6 @@ standard names. */
 
 /* USER CODE BEGIN 2 */
 /* Definitions needed when configGENERATE_RUN_TIME_STATS is on */
-// #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS configureTimerForRunTimeStats
-// #define portGET_RUN_TIME_COUNTER_VALUE getRunTimeCounterValue
 /* USER CODE END 2 */
 
 /* USER CODE BEGIN Defines */

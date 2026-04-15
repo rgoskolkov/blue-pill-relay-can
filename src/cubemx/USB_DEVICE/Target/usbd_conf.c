@@ -26,7 +26,7 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN Includes */
-#include "main.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -77,9 +77,9 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     __HAL_RCC_USB_CLK_ENABLE();
 
     /* Peripheral interrupt init */
-    HAL_NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 16, 0);
     HAL_NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-    HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 16, 0);
     HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
   /* USER CODE BEGIN USB_MspInit 1 */
 
@@ -98,21 +98,7 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef* pcdHandle)
     __HAL_RCC_USB_CLK_DISABLE();
 
     /* Peripheral interrupt Deinit*/
-  /* USER CODE BEGIN USB:USB_HP_CAN1_TX_IRQn disable */
-    /**
-    * Uncomment the line below to disable the "USB_HP_CAN1_TX_IRQn" interrupt
-    * Be aware, disabling shared interrupt may affect other IPs
-    */
-    /* HAL_NVIC_DisableIRQ(USB_HP_CAN1_TX_IRQn); */
-  /* USER CODE END USB:USB_HP_CAN1_TX_IRQn disable */
-
-  /* USER CODE BEGIN USB:USB_LP_CAN1_RX0_IRQn disable */
-    /**
-    * Uncomment the line below to disable the "USB_LP_CAN1_RX0_IRQn" interrupt
-    * Be aware, disabling shared interrupt may affect other IPs
-    */
-    /* HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn); */
-  /* USER CODE END USB:USB_LP_CAN1_RX0_IRQn disable */
+    HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
 
   /* USER CODE BEGIN USB_MspDeInit 1 */
 
@@ -131,9 +117,6 @@ static void PCD_SetupStageCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_SetupStageCallback(PCD_HandleTypeDef *hpcd)
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 {
-  /* LED индикация: enumeration пошла */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-  
   USBD_LL_SetupStage((USBD_HandleTypeDef*)hpcd->pData, (uint8_t *)hpcd->Setup);
 }
 
@@ -192,9 +175,6 @@ static void PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 {
-  /* LED индикация: хост увидел устройство */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-  
   USBD_SpeedTypeDef speed = USBD_SPEED_FULL;
 
   if ( hpcd->Init.speed != PCD_SPEED_FULL)
@@ -638,26 +618,21 @@ void HAL_PCDEx_SetConnectionState(PCD_HandleTypeDef *hpcd, uint8_t state)
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 {
   /* USER CODE BEGIN 6 */
-  /* На STM32F103 pull-up 1.5K подключён аппаратно к PA12 (всегда активен)
-   * HAL_PCD_Start уже вызывается в USBD_LL_Start, поэтому достаточно
-   * просто включать/выключать USB контроллер */
   if (state == 1)
   {
-    /* Подключаем USB: сбрасываем Force Reset и Power Down */
-    USB->CNTR &= ~(USB_CNTR_FRES | USB_CNTR_PDWN);
-    USB->ISTR = 0;  /* Очищаем все pending bits */
-    USB->CNTR |= USB_CNTR_CTRM;  /* Разрешаем прерывания Correct Transfer */
+    /* Configure Low connection state. */
+
   }
   else
   {
-    /* Отключаем USB */
-    USB->CNTR |= USB_CNTR_FRES | USB_CNTR_PDWN;
+    /* Configure High connection state. */
+
   }
   /* USER CODE END 6 */
 }
 
 /**
-  * @brief  Returns the USB status depending on the HAL status:
+  * @brief  Retuns the USB status depending on the HAL status:
   * @param  hal_status: HAL status
   * @retval USB status
   */

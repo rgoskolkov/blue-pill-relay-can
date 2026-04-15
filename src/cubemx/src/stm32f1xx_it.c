@@ -130,7 +130,7 @@ extern CAN_HandleTypeDef hcan;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
-#include "usb_device.h"
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -312,10 +312,10 @@ void USB_HP_CAN1_TX_IRQHandler(void)
   HAL_PCD_IRQHandler(&hpcd_USB_FS);
   
   /* CAN TX complete - обрабатываем если есть pending (запрос завершён) */
-  if (hcan.Instance->TSR & (CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2))
-  {
-    HAL_CAN_IRQHandler(&hcan);
-  }
+  // if (hcan.Instance->TSR & (CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2))
+  // {
+  //   HAL_CAN_IRQHandler(&hcan);
+  // }
 }
 
 /**
@@ -327,10 +327,10 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   HAL_PCD_IRQHandler(&hpcd_USB_FS);
   
   /* CAN RX0 - обрабатываем если есть pending (сообщение в FIFO) */
-  if (hcan.Instance->RF0R & CAN_RF0R_FMP0)
-  {
-    HAL_CAN_IRQHandler(&hcan);
-  }
+  // if (hcan.Instance->RF0R & CAN_RF0R_FMP0)
+  // {
+  //   HAL_CAN_IRQHandler(&hcan);
+  // }
 }
 
 /**
@@ -353,9 +353,10 @@ void EXTI9_5_IRQHandler(void)
   {
     HAL_GPIO_EXTI_IRQHandler(SWITCH8_Pin);
   }
-if (__HAL_GPIO_EXTI_GET_IT(SWITCH1_Pin) != RESET) {
-HAL_GPIO_EXTI_IRQHandler(SWITCH1_Pin);
-}
+  if (__HAL_GPIO_EXTI_GET_IT(SWITCH1_Pin) != RESET) 
+  {
+    HAL_GPIO_EXTI_IRQHandler(SWITCH1_Pin);
+  }
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
 
   /* USER CODE END EXTI9_5_IRQn 1 */

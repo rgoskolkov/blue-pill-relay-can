@@ -29,6 +29,7 @@
 #include "board_config.h"
 #include <string.h>
 #include "input_driver.h"
+#include "usb_cdc_monitor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,14 +61,14 @@ const osThreadAttr_t inputTask_attributes = {
 
 const osThreadAttr_t ledTask_attributes = {
   .name = "ledTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 3,
+  .stack_size = configMINIMAL_STACK_SIZE * 2,
   .priority = (osPriority_t) osPriorityLow,
 };
 
 osThreadId_t monitorTaskHandle;
 const osThreadAttr_t monitorTask_attributes = {
   .name = "monitorTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 4,
+  .stack_size = configMINIMAL_STACK_SIZE * 6,
   .priority = (osPriority_t) osPriorityLow1,
 };
 
@@ -106,6 +107,16 @@ void MX_FREERTOS_Init(void) {
   #if MONITOR_TASK == 1
     osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
   #endif
+  
+  /* USB CDC logging task - ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ДИАГНОСТИКИ */
+  // osThreadId_t usbCdcTaskHandle;
+  // const osThreadAttr_t usbCdcTask_attributes = {
+  //   .name = "usbCdcTask",
+  //   .stack_size = configMINIMAL_STACK_SIZE * 3,
+  //   .priority = (osPriority_t) osPriorityLow,
+  // };
+  // usbCdcTaskHandle = osThreadNew(USB_CDC_LogTask, NULL, &usbCdcTask_attributes);
+  
   /* can_adapter_init() вызывается из application_init() */
  /* USER CODE END RTOS_THREADS */
 
