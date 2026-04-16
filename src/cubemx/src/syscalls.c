@@ -29,12 +29,12 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/times.h>
-#include "board_config.h"
 
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
 extern int __io_getchar(void) __attribute__((weak));
+
 
 char *__env[1] = { 0 };
 char **environ = __env;
@@ -66,21 +66,27 @@ void _exit (int status)
 
 __attribute__((weak)) int _read(int file, char *ptr, int len)
 {
-    (void)ptr;
-    (void)len;
-    return -1;
+  (void)file;
+  int DataIdx;
+
+  for (DataIdx = 0; DataIdx < len; DataIdx++)
+  {
+    *ptr++ = __io_getchar();
+  }
+
+  return len;
 }
 
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
-       // Проверяем, свободен ли DMA
-    if (HAL_DMA_GetState(&hdma_usart1_tx) == HAL_DMA_STATE_READY) {
-        // Свободен — отправляем
-        HAL_UART_Transmit_DMA(&huart1, (uint8_t*)ptr, len);
-    }
-    // Если занят — просто игнорируем этот лог
-    
-    return len;  // Всегда возвращаем успех, чтобы printf не паниковал
+  (void)file;
+  int DataIdx;
+
+  for (DataIdx = 0; DataIdx < len; DataIdx++)
+  {
+    __io_putchar(*ptr++);
+  }
+  return len;
 }
 
 int _close(int file)

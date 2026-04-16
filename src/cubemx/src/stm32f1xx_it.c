@@ -53,16 +53,7 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void configASSERT_Handler(uint32_t assert_address) {
-    //printf("configASSERT_Handler at PC: %08lX\n", assert_address);
-    // Save the assert location to a backup register
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_RCC_BKP_CLK_ENABLE();
-    HAL_PWR_EnableBkUpAccess();
-    BKP->DR4 = 0xAAAA; // Magic number for configASSERT
-    BKP->DR5 = (assert_address & 0xFFFF0000) >> 16;
-    BKP->DR6 = (assert_address & 0x0000FFFF);
-    HAL_PWR_DisableBkUpAccess();
-
+    printf("configASSERT_Handler at PC: %08lX\n", assert_address);
     // Infinite loop with a different blink pattern
     while(1) {
         // Blink fast
@@ -78,22 +69,7 @@ void configASSERT_Handler(uint32_t assert_address) {
 
 void HardFault_c_handler(uint32_t *stacked_frame) {
     uint32_t fault_address = stacked_frame[6];
-
-    // Enable PWR and BKP clocks
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_RCC_BKP_CLK_ENABLE();
-    // Allow access to Backup domain
-    HAL_PWR_EnableBkUpAccess();
-
-    // Use BKP registers to store crash information.
-    // On STM32F1, these are separate from RTC.
-    BKP->DR1 = 0xDEAD; // Magic number
-    BKP->DR2 = (fault_address & 0xFFFF0000) >> 16; // High 16 bits
-    BKP->DR3 = (fault_address & 0x0000FFFF);      // Low 16 bits
-
-    // Disable access to Backup domain
-    HAL_PWR_DisableBkUpAccess();
-
+    printf("HardFault_Handler at PC: %08lX\n", fault_address);
     // Infinite loop with SOS blink
     while (1) {
         // S
@@ -126,6 +102,8 @@ void HardFault_c_handler(uint32_t *stacked_frame) {
 
 /* External variables --------------------------------------------------------*/
 extern CAN_HandleTypeDef hcan;
+extern DMA_HandleTypeDef hdma_usart1_tx;
+extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
@@ -183,21 +161,7 @@ void MemManage_Handler(void)
 
 void MemManage_c_handler(uint32_t *stacked_frame) {
     uint32_t fault_address = stacked_frame[6];
-
-    // Enable PWR and BKP clocks
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_RCC_BKP_CLK_ENABLE();
-    // Allow access to Backup domain
-    HAL_PWR_EnableBkUpAccess();
-
-    // Use BKP registers to store crash information.
-    BKP->DR7 = 0xBEEF; // Magic number for MemManage
-    BKP->DR8 = (fault_address & 0xFFFF0000) >> 16;
-    BKP->DR9 = (fault_address & 0x0000FFFF);
-
-    // Disable access to Backup domain
-    HAL_PWR_DisableBkUpAccess();
-
+    printf("MemManage_Handler at PC: %08lX\n", fault_address);
     while(1) {
         // Fast blinks for MemManage fault
         for (int i = 0; i < 10; i++) {
@@ -303,11 +267,31 @@ void EXTI4_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles DMA1 channel4 global interrupt.
+  */
+void DMA1_Channel4_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel4_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+  /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel4_IRQn 1 */
+}
+
+/**
   * @brief This function handles USB high priority or CAN TX interrupts.
   */
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
+  /* USER CODE BEGIN USB_HP_CAN1_TX_IRQn 0 */
+
+  /* USER CODE END USB_HP_CAN1_TX_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan);
+  /* USER CODE BEGIN USB_HP_CAN1_TX_IRQn 1 */
+
+  /* USER CODE END USB_HP_CAN1_TX_IRQn 1 */
 }
 
 /**
@@ -315,7 +299,13 @@ void USB_HP_CAN1_TX_IRQHandler(void)
   */
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
+  /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 0 */
+
+  /* USER CODE END USB_LP_CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan);
+  /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
+
+  /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }
 
 /**
@@ -338,10 +328,6 @@ void EXTI9_5_IRQHandler(void)
   {
     HAL_GPIO_EXTI_IRQHandler(SWITCH8_Pin);
   }
-  if (__HAL_GPIO_EXTI_GET_IT(SWITCH1_Pin) != RESET) 
-  {
-    HAL_GPIO_EXTI_IRQHandler(SWITCH1_Pin);
-  }
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
 
   /* USER CODE END EXTI9_5_IRQn 1 */
@@ -359,6 +345,20 @@ void TIM4_IRQHandler(void)
   /* USER CODE BEGIN TIM4_IRQn 1 */
 
   /* USER CODE END TIM4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART1 global interrupt.
+  */
+void USART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART1_IRQn 0 */
+
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
+
+  /* USER CODE END USART1_IRQn 1 */
 }
 
 /**

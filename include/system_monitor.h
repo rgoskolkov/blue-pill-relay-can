@@ -2,6 +2,5 @@
 #define SYSTEM_MONITOR_H
 
 void system_monitor_task(void *argument);
-void print_fault_details(void);
 
 #endif // SYSTEM_MONITOR_H
