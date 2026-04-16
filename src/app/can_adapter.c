@@ -5,6 +5,7 @@
 #include "flash_driver.h"
 #include "stm32f1xx_hal.h"
 #include <stdio.h>
+#include <stdbool.h>
 
 /* --- Внутреннее состояние --- */
 static uint8_t can_node_id = 1;

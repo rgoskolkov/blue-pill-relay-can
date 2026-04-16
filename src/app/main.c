@@ -6,14 +6,14 @@
 #include <stdio.h>
 #include "main_application.h"
 #include "system_monitor.h"
+#include "can_adapter.h"
 #include "can.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
+
+
 #include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END Includes */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -37,10 +37,7 @@ int main(void)
   SystemClock_Config();
   MX_GPIO_Init();
   MX_TIM1_Init();
-  //MX_CAN_Init();
-  MX_USB_DEVICE_Init();
-  // /* Пауза для стабилизации */
-  HAL_Delay(500);
+  MX_CAN_Init();
 
   application_init();
   

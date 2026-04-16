@@ -125,7 +125,6 @@ void HardFault_c_handler(uint32_t *stacked_frame) {
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern PCD_HandleTypeDef hpcd_USB_FS;
 extern CAN_HandleTypeDef hcan;
 extern TIM_HandleTypeDef htim4;
 
@@ -308,14 +307,7 @@ void EXTI4_IRQHandler(void)
   */
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
-  /* USB HIGH PRIORITY - обрабатываем первым, таймаут критичен */
-  HAL_PCD_IRQHandler(&hpcd_USB_FS);
-  
-  /* CAN TX complete - обрабатываем если есть pending (запрос завершён) */
-  // if (hcan.Instance->TSR & (CAN_TSR_RQCP0 | CAN_TSR_RQCP1 | CAN_TSR_RQCP2))
-  // {
-  //   HAL_CAN_IRQHandler(&hcan);
-  // }
+  HAL_CAN_IRQHandler(&hcan);
 }
 
 /**
@@ -323,14 +315,7 @@ void USB_HP_CAN1_TX_IRQHandler(void)
   */
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
-  /* USB LOW PRIORITY - обрабатываем первым */
-  HAL_PCD_IRQHandler(&hpcd_USB_FS);
-  
-  /* CAN RX0 - обрабатываем если есть pending (сообщение в FIFO) */
-  // if (hcan.Instance->RF0R & CAN_RF0R_FMP0)
-  // {
-  //   HAL_CAN_IRQHandler(&hcan);
-  // }
+  HAL_CAN_IRQHandler(&hcan);
 }
 
 /**

@@ -29,7 +29,6 @@
 #include "board_config.h"
 #include <string.h>
 #include "input_driver.h"
-#include "usb_cdc_monitor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,16 +107,6 @@ void MX_FREERTOS_Init(void) {
     osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
   #endif
   
-  /* USB CDC logging task - ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ДИАГНОСТИКИ */
-  // osThreadId_t usbCdcTaskHandle;
-  // const osThreadAttr_t usbCdcTask_attributes = {
-  //   .name = "usbCdcTask",
-  //   .stack_size = configMINIMAL_STACK_SIZE * 3,
-  //   .priority = (osPriority_t) osPriorityLow,
-  // };
-  // usbCdcTaskHandle = osThreadNew(USB_CDC_LogTask, NULL, &usbCdcTask_attributes);
-  
-  /* can_adapter_init() вызывается из application_init() */
  /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

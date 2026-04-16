@@ -88,10 +88,6 @@ void Error_Handler(void);
 #define SWITCH2_Pin GPIO_PIN_10
 #define SWITCH2_GPIO_Port GPIOA
 #define SWITCH2_EXTI_IRQn EXTI15_10_IRQn
-#define USB_COM_DM_Pin GPIO_PIN_11
-#define USB_COM_DM_GPIO_Port GPIOA
-#define USB_COM_DP_Pin GPIO_PIN_12
-#define USB_COM_DP_GPIO_Port GPIOA
 #define SWITCH3_Pin GPIO_PIN_15
 #define SWITCH3_GPIO_Port GPIOA
 #define SWITCH3_EXTI_IRQn EXTI15_10_IRQn
