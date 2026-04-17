@@ -25,7 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led_driver.h"
-#include "system_monitor.h"
+#include "heartbeat.h"
 #include "board_config.h"
 #include <string.h>
 #include "input_driver.h"
@@ -48,25 +48,24 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-osMessageQueueId_t switchEventQueueHandle;
 
 osThreadId_t inputTaskHandle;
 const osThreadAttr_t inputTask_attributes = {
   .name = "inputTask",
-  .stack_size = configMINIMAL_STACK_SIZE * 2,
+  .stack_size = configMINIMAL_STACK_SIZE * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE END Variables */
-
+osThreadId_t ledTaskHandle;
 const osThreadAttr_t ledTask_attributes = {
   .name = "ledTask",
   .stack_size = configMINIMAL_STACK_SIZE * 2,
   .priority = (osPriority_t) osPriorityLow,
 };
 
-osThreadId_t monitorTaskHandle;
-const osThreadAttr_t monitorTask_attributes = {
-  .name = "monitorTask",
+osThreadId_t heartbeatTaskHandle;
+const osThreadAttr_t heartbeatTask_attributes = {
+  .name = "heartbeatTask",
   .stack_size = configMINIMAL_STACK_SIZE * 6,
   .priority = (osPriority_t) osPriorityLow1,
 };
@@ -77,42 +76,14 @@ const osThreadAttr_t monitorTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void MX_FREERTOS_Init(void) {
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  const osMessageQueueAttr_t switchEventQueue_attributes = {
-    .name = "switchEventQueue"
-  };
-  switchEventQueueHandle = osMessageQueueNew(16, sizeof(uint8_t), &switchEventQueue_attributes);
   /* USER CODE END RTOS_QUEUES */
 
   /* USER CODE BEGIN RTOS_THREADS */
-  osThreadNew(led_task, NULL, &ledTask_attributes);
+  ledTaskHandle = osThreadNew(led_task, NULL, &ledTask_attributes);
   inputTaskHandle = osThreadNew(input_task, NULL, &inputTask_attributes);
-  #if MONITOR_TASK == 1
-    osThreadNew(system_monitor_task, NULL, &monitorTask_attributes);
-  #endif
-  
- /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
-
+  heartbeatTaskHandle = osThreadNew(heartbeat_task, NULL, &heartbeatTask_attributes);
 }
 
 /* Private application code --------------------------------------------------*/
@@ -128,7 +99,7 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
     } else if (strcmp(pcTaskName, "inputTask") == 0) {
         blink_count = 2;
     }
-    else if (strcmp(pcTaskName, "monitorTask") == 0) {
+    else if (strcmp(pcTaskName, "heartbeatTask") == 0) {
         blink_count = 3;
     }
     dead_hand(200, blink_count);
@@ -140,3 +111,4 @@ void vApplicationMallocFailedHook(void)
    dead_hand(500, 4);
 }
 /* USER CODE END Application */
+

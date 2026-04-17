@@ -5,3 +5,6 @@
 .vscode/ipch
 src/cubemx_temp
 .DS_Store
+can2mqtt-dev/*
+can_workspace/*
+.claude/*

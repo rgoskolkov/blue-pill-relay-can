@@ -6,8 +6,8 @@
 // Сигнал подтверждения (старт, выполнение команды)
 void led_signal_ack(void);
 
-// Сообщить, что связь по Modbus жива
-void led_signal_heartbeat(void);
+// Сигнал о приёме CAN-фрейма (можно вызывать из прерывания)
+void led_signal_can_rx_from_isr(void);
 
 void dead_hand(uint32_t delay, uint32_t count);
 

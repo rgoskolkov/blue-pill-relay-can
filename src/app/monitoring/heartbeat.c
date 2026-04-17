@@ -1,10 +1,12 @@
-#include "system_monitor.h"
+#include "heartbeat.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "stm32f1xx_hal.h"
 #include <string.h>
 #include <stdio.h>
 #include "cmsis_os.h"
+#include "can_adapter.h"
+#include "board_config.h"
 
 // Символы из linker-скрипта для анализа памяти
 extern uint32_t _sdata; // Начало .data
@@ -17,6 +19,7 @@ extern uint32_t _estack; // Конец RAM
 extern const osThreadAttr_t ledTask_attributes;
 extern const osThreadAttr_t monitorTask_attributes;
 extern const osThreadAttr_t inputTask_attributes;
+
 
 // Вспомогательная функция для получения общего размера стека задачи по ее имени
 uint32_t get_task_stack_size(const char* task_name) {
@@ -32,22 +35,10 @@ uint32_t get_task_stack_size(const char* task_name) {
     return 0; // Задача не найдена
 }
 
-const char* taskStateToString(eTaskState state) {
-    switch(state) {
-        case eRunning:   return "Run";
-        case eReady:     return "Ready";
-        case eBlocked:   return "Blc";
-        case eSuspended: return "Spd";
-        case eDeleted:   return "Del";
-        case eInvalid:   return "Inv";
-        default:         return "Uwn";
-    }
-}
-
 void system_monitor(void) {
     UBaseType_t task_count = uxTaskGetNumberOfTasks();
     // Заголовок
-    printf("--- System Monitor ---\r\n Name\t\tState\tPrio\tStackLeft\tTotal\tUsed%%\r\n");
+    printf("- SysState -\r\n Stack\r\n Name\t\tState\tPrio\tLeft\tTotal\tUse%%\r\n");
     if (task_count <= 10) {
         unsigned long _total_runtime;
         TaskStatus_t _task_status_array[task_count];
@@ -61,9 +52,9 @@ void system_monitor(void) {
                 used_percent = ((total_stack - hwm_bytes) * 100) / total_stack;
             }
 
-            printf("%-10s\t%-3s\t%lu\t%lu\t\t%lu\t%lu%%\r\n",
+            printf("%-10s\t%u\t%lu\t%lu\t%lu\t%lu%%\r\n",
                                _task_status_array[i].pcTaskName,
-                               taskStateToString(_task_status_array[i].eCurrentState),
+                               _task_status_array[i].eCurrentState,
                                _task_status_array[i].uxCurrentPriority,
                                hwm_bytes,
                                total_stack,
@@ -72,7 +63,7 @@ void system_monitor(void) {
     }
 
     // Информация о куче
-    printf("[HEAP] Total: %u, Current Free: %u, Minimal Ever Free: %u\r\n",
+    printf("[HEAP] Total: %u, CurrFree: %u, MinFree: %u\r\n",
                        (unsigned int)configTOTAL_HEAP_SIZE,
                        (unsigned int)xPortGetFreeHeapSize(),
                        (unsigned int)xPortGetMinimumEverFreeHeapSize());
@@ -84,18 +75,22 @@ void system_monitor(void) {
     uint32_t static_only = static_plus_bss - heap_size;
     uint32_t free_for_stack = total_ram - static_plus_bss;
 
-    printf("[RAM] Total: %lu | Static: %lu | Heap: %lu | Free for Stacks: %lu\r\n",
+    printf("[RAM] Tot: %lu | Stat: %lu | Free: %lu\r\n",
                        total_ram,
                        static_only,
-                       heap_size,
                        free_for_stack);
 }
 
-void system_monitor_task(void *argument)
+void heartbeat_task(void *argument)
 {
+    printf("heartbeat_task started\r\n");
+    can_send_heartbeat();
     for(;;)
     {
-        vTaskDelay(pdMS_TO_TICKS(10000));
-        system_monitor();
+        vTaskDelay(pdMS_TO_TICKS(HEARTBEAT_TIME_MS));
+        #if MONITOR_TASK == 1
+            system_monitor();
+        #endif
+        can_send_heartbeat();
     }
 }

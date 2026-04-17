@@ -19,7 +19,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
-#include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -103,7 +102,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart1_tx);
 
     /* USART1 interrupt Init */
-    HAL_NVIC_SetPriority(USART1_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(USART1_IRQn, 8, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspInit 1 */
 
@@ -140,18 +139,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-int _write(int file, char *ptr, int len) {
-    HAL_UART_Transmit_DMA(&huart1, (uint8_t*)ptr, len);
-    
-    // Ждём завершения передачи (блокируем задачу)
-    while (huart1.gState != HAL_UART_STATE_READY) {
-        taskYIELD();
-    }
-    
-    return len;
-}
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-}
 /* USER CODE END 1 */
 

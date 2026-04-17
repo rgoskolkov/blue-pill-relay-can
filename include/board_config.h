@@ -37,6 +37,10 @@
 #define DEBOUNCE_MS 300U
 #endif
 
+#ifndef HEARTBEAT_TIME_MS
+#define HEARTBEAT_TIME_MS 5000U
+#endif
+
 /* Relay pins (берутся напрямую из main.h) */
 #define RELAY1_PIN RELAY1_Pin
 #define RELAY1_PORT RELAY1_GPIO_Port
@@ -72,14 +76,27 @@
 #define SWITCH7_PORT SWITCH7_GPIO_Port
 #define SWITCH8_PIN SWITCH8_Pin
 #define SWITCH8_PORT SWITCH8_GPIO_Port
+#define SWITCH9_PIN SWITCH9_Pin
+#define SWITCH9_PORT SWITCH9_GPIO_Port
+#define SWITCH10_PORT SWITCH10_GPIO_Port
+#define SWITCH10_PIN SWITCH10_Pin
+#define SWITCH11_PORT SWITCH11_GPIO_Port
+#define SWITCH11_PIN SWITCH11_Pin
+#define SWITCH12_PORT SWITCH12_GPIO_Port
+#define SWITCH12_PIN SWITCH12_Pin
 
+/* =================================================================================
+   Switch-to-Relay Mapping
+==================================================================================*/
+
+extern const uint8_t switch_to_relay_map[NUM_SWITCHES];
 
 /* =================================================================================
    Hardware Porting Layer: Pin Mapping Arrays (extern)
 ==================================================================================*/
 
-extern const GPIO_TypeDef* const relay_ports[NUM_SWITCHES];
-extern const uint16_t relay_pins[NUM_SWITCHES];
+extern const GPIO_TypeDef* const relay_ports[NUM_RELAYS];
+extern const uint16_t relay_pins[NUM_RELAYS];
 extern const GPIO_TypeDef* const switch_ports[NUM_SWITCHES];
 extern const uint16_t switch_pins[NUM_SWITCHES];
 

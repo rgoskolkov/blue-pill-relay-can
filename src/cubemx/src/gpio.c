@@ -54,17 +54,11 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BUTTON_GND_GPIO_Port, BUTTON_GND_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, RELAY8_Pin|RELAY7_Pin|RELAY6_Pin|RELAY5_Pin
                           |RELAY4_Pin|RELAY3_Pin|RELAY2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RELAY1_GPIO_Port, RELAY1_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(RELAY_GND_GPIO_Port, RELAY_GND_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -72,19 +66,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : BUTTON_GND_Pin */
-  GPIO_InitStruct.Pin = BUTTON_GND_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(BUTTON_GND_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : USER_KEY_Pin */
-  GPIO_InitStruct.Pin = USER_KEY_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(USER_KEY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RELAY8_Pin RELAY7_Pin RELAY6_Pin RELAY5_Pin
                            RELAY4_Pin RELAY3_Pin RELAY2_Pin */
@@ -102,42 +83,21 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RELAY1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : RELAY_GND_Pin */
-  GPIO_InitStruct.Pin = RELAY_GND_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(RELAY_GND_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : SWITCH1_Pin SWITCH2_Pin SWITCH3_Pin */
-  GPIO_InitStruct.Pin = SWITCH1_Pin|SWITCH2_Pin|SWITCH3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : SWITCH4_Pin SWITCH5_Pin SWITCH6_Pin SWITCH7_Pin
+  /*Configure GPIO pins : SWITCH9_Pin SWITCH10_Pin SWITCH11_Pin SWITCH12_Pin
+                           SWITCH4_Pin SWITCH5_Pin SWITCH6_Pin SWITCH7_Pin
                            SWITCH8_Pin */
-  GPIO_InitStruct.Pin = SWITCH4_Pin|SWITCH5_Pin|SWITCH6_Pin|SWITCH7_Pin
+  GPIO_InitStruct.Pin = SWITCH9_Pin|SWITCH10_Pin|SWITCH11_Pin|SWITCH12_Pin
+                          |SWITCH4_Pin|SWITCH5_Pin|SWITCH6_Pin|SWITCH7_Pin
                           |SWITCH8_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 8, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI3_IRQn, 8, 0);
-  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI4_IRQn, 8, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 8, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 8, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /*Configure GPIO pins : SWITCH1_Pin SWITCH2_Pin SWITCH3_Pin */
+  GPIO_InitStruct.Pin = SWITCH1_Pin|SWITCH2_Pin|SWITCH3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 

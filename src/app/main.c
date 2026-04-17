@@ -5,7 +5,6 @@
 #include "stm32f1xx.h"
 #include <stdio.h>
 #include "main_application.h"
-#include "system_monitor.h"
 #include "can_adapter.h"
 #include "can.h"
 #include "dma.h"
@@ -40,7 +39,6 @@ int main(void)
   MX_TIM1_Init();
   MX_CAN_Init();
   MX_USART1_UART_Init();
-  printf("\r\n--- APPLICATION STARTUP ---\r\n");
   application_init();
   
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -143,12 +141,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
