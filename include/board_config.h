@@ -13,7 +13,7 @@
 ==================================================================================*/
 
 #ifndef CAN_NODE_ID_DEFAULT
-#define CAN_NODE_ID_DEFAULT 1U
+#define CAN_NODE_ID_DEFAULT 0U
 #endif
 
 #ifndef CAN_BAUDRATE

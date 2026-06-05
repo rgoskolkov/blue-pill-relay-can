@@ -29,6 +29,7 @@
 #define SDO_IDX_ERROR_REGISTER          0x1001
 #define SDO_IDX_DEVICE_NAME             0x1008
 #define SDO_IDX_SW_VERSION              0x100A
+#define SDO_IDX_HARDWARE_VERSION        0x1009
 #define SDO_IDX_PRODUCER_HEARTBEAT_TIME 0x1017
 #define SDO_IDX_IDENTITY_OBJECT         0x1018
 
@@ -38,18 +39,22 @@
 #define OD_TPDO_MAPPING_PARAM_BASE      0x1A00
 
 /* === Специфичные объекты для can2mqtt === */
-#define OD_ENTITY_BASE                  0x2000
-#define OD_ENTITY_TYPES_REV1            0x2001  /* карта сущностей, revision 1 */
 #define SDO_IDX_NODE_ID                 0x2002  /* Node ID устройства (чтение/запись) */
+#define OD_IDX_RELAY_BITMASK            0x2200  /* Relay states bitmask (read-only) */
 
-#define OD_ENTITY_METADATA_OFFSET       0x10
-#define OD_ENTITY_STATE_OFFSET          0x11
-#define OD_ENTITY_COMMAND_OFFSET        0x12
-#define OD_ENTITY_BLOCK_SIZE            16      // Size of object dictionary block per entity
+// === Новые объекты для "умного" обнаружения сущностей ===
+#define ENTITY_LIST_IDX         0x2F00 // Индекс для массива типов сущностей
+#define ENTITY_BLOCK_BASE_IDX   0x2100 // Базовый индекс для первого блока сущностей
+#define ENTITY_BLOCK_SIZE       16     // Размер блока OD для одной сущности (0x2100 - 0x210F)
+
+// Смещения внутри блока сущности
+#define ENTITY_METADATA_OFFSET  0  // 0x2100 (для первой сущности)
+#define ENTITY_STATE_OFFSET     1  // 0x2101 (для первой сущности)
+#define ENTITY_COMMAND_OFFSET   2  // 0x2102 (для первой сущности)
 
 /* Identity Object константы */
-#define CANOPEN_VENDOR_ID       0xA59A08F5
-#define CANOPEN_PRODUCT_CODE    0x6BDFA1D9
+#define CANOPEN_VENDOR_ID       0x00000BEE
+#define CANOPEN_PRODUCT_CODE    0x0000F103
 #define CANOPEN_REVISION_NUMBER 1
 #define CANOPEN_SERIAL_NUMBER   0x00000001
 
