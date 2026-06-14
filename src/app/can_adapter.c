@@ -10,11 +10,25 @@
 
 #define PRINTLN(fmt, ...) printf(fmt "\r\n", ##__VA_ARGS__)
 
+/* --- SDO Segmented Transfer State --- */
+static struct {
+    bool in_progress;
+    const uint8_t *data;
+    uint32_t size;
+    uint32_t offset;
+    uint8_t toggle;
+} sdo_segmented_upload_state = {false, NULL, 0, 0, 0};
+
 /* --- Внутреннее состояние --- */
 static uint8_t can_node_id = 0; /* Node ID устройства (1-127), 0 = unconfigured */
 static uint8_t relay_states = 0; /* Битовая маска 8 реле */
 
 /* ====== Вспомогательные ====== */
+
+/** Сбросить состояние сегментированной передачи */
+static void sdo_reset_segmented_transfer() {
+    sdo_segmented_upload_state.in_progress = false;
+}
 
 /** Отправить CAN-фрейм */
 static int can_tx(uint32_t std_id, const uint8_t *data, uint8_t len)
@@ -26,12 +40,17 @@ static int can_tx(uint32_t std_id, const uint8_t *data, uint8_t len)
     hdr.RTR = CAN_RTR_DATA;
     hdr.DLC = len;
 
+    #if ENABLE_USART_DEBUG
     printf("CAN_TX ID=0x%03X len=%d data=",(unsigned)std_id, (unsigned)len);
     for (size_t i = 0; i < len; i++)
     {
+
         printf("%02X ", data[i]);
+
     }
+
     printf("\r\n");
+    #endif
     
 
     if (HAL_CAN_AddTxMessage(&hcan, &hdr, (uint8_t *)data, &mb) != HAL_OK)
@@ -40,6 +59,25 @@ static int can_tx(uint32_t std_id, const uint8_t *data, uint8_t len)
         return -1;
     }
     return 0;
+}
+
+/** Запустить сегментированную SDO-передачу */
+static void sdo_start_segmented_upload(uint16_t index, uint8_t subindex, const char *data_str) {
+    sdo_segmented_upload_state.in_progress = true;
+    sdo_segmented_upload_state.data = (const uint8_t *)data_str;
+    sdo_segmented_upload_state.size = strlen(data_str);
+    sdo_segmented_upload_state.offset = 0;
+    sdo_segmented_upload_state.toggle = 0;
+
+    uint8_t resp[CAN_DATA_LENGTH] = {0};
+    // Initiate Segmented Upload Response (Command 0x41)
+    resp[0] = 0x41; 
+    resp[1] = index & 0xFF;
+    resp[2] = (index >> 8) & 0xFF;
+    resp[3] = subindex;
+    // Copy the total size into bytes 4-7 of the response
+    memcpy(&resp[4], &sdo_segmented_upload_state.size, 4); 
+    can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
 }
 
 /** Отправить SDO Abort-сообщение */
@@ -81,15 +119,15 @@ void can_process_rx(uint32_t cob_id, const uint8_t *data, uint8_t len)
     uint32_t func = cob_id & 0x780;
     uint8_t node = cob_id & 0x7F;
 
+#if ENABLE_USART_DEBUG
     printf("CAN_RX COB_ID=0x%03X func=0x%03X node=%d data=",
-            (unsigned)cob_id, (unsigned)func, node);
-
+           (unsigned)cob_id, (unsigned)func, node);
     for (size_t i = 0; i < len; i++)
     {
         printf("%02X ", data[i]);
     }
     printf("\r\n");
-
+#endif
     /* Индикация приёма CAN-фрейма */
     led_signal_can_rx_from_isr();
 
@@ -97,6 +135,31 @@ void can_process_rx(uint32_t cob_id, const uint8_t *data, uint8_t len)
     if (func == COB_ID_NMT && node == 0)
     {
         PRINTLN("CAN_RX NMT command received and skipped: cmd=0x%02X", data[0]);
+        sdo_reset_segmented_transfer();
+        return;
+    }
+    /* --- RPDO1 for Relay Control --- */
+    if (cob_id == (COB_ID_PDO_RX + can_node_id))
+    {
+        if (len >= 2)
+        {
+            uint8_t relay_index = data[0];
+            uint8_t new_state = data[1];
+
+            if (relay_index < NUM_RELAYS)
+            {
+                if (new_state)
+                    relay_on(relay_index);
+                else
+                    relay_off(relay_index);
+
+                // Update internal state cache
+                if (new_state)
+                    relay_states |= (1 << relay_index);
+                else
+                    relay_states &= ~(1 << relay_index);
+            }
+        }
         return;
     }
     /* --- SDO Request --- */
@@ -107,230 +170,79 @@ void can_process_rx(uint32_t cob_id, const uint8_t *data, uint8_t len)
         uint8_t sub = data[3];
         uint8_t resp[CAN_DATA_LENGTH] = {0};
 
+        // --- SDO Segmented Upload: Client requesting next segment ---
+        if ((cmd & 0xE0) == 0x60)
+        {
+            if (!sdo_segmented_upload_state.in_progress) {
+                can_send_sdo_abort(idx, sub, 0x05040001); // SDO command specifier invalid or unknown
+                return;
+            }
+
+            uint8_t client_toggle = (cmd >> 4) & 1;
+            if (client_toggle != sdo_segmented_upload_state.toggle) {
+                can_send_sdo_abort(idx, sub, 0x05030000); // Toggle bit not alternated
+                sdo_reset_segmented_transfer();
+                return;
+            }
+
+            uint32_t remaining_bytes = sdo_segmented_upload_state.size - sdo_segmented_upload_state.offset;
+            uint8_t bytes_to_send = (remaining_bytes > 7) ? 7 : remaining_bytes;
+            bool is_last_segment = (bytes_to_send == remaining_bytes);
+
+            // Build response: [t|n|c] + data
+            resp[0] = (sdo_segmented_upload_state.toggle << 4) | ((7 - bytes_to_send) << 1) | (is_last_segment ? 1 : 0);
+            memcpy(&resp[1], sdo_segmented_upload_state.data + sdo_segmented_upload_state.offset, bytes_to_send);
+
+            can_tx(COB_ID_SDO_TX + can_node_id, resp, bytes_to_send + 1);
+
+            sdo_segmented_upload_state.offset += bytes_to_send;
+            sdo_segmented_upload_state.toggle = !sdo_segmented_upload_state.toggle;
+
+            if (is_last_segment) {
+                sdo_reset_segmented_transfer();
+            }
+            return;
+        }
+
+        // If a new request comes in while a transfer is in progress, abort the old one.
+        if (sdo_segmented_upload_state.in_progress && cmd != SDO_ABORT) {
+            sdo_reset_segmented_transfer();
+        }
+
         resp[1] = idx & 0xFF;
         resp[2] = (idx >> 8) & 0xFF;
         resp[3] = sub;
+#if ENABLE_USART_DEBUG
         PRINTLN("CAN_RX SDO: cmd=0x%02X id=0x%04X sub=%d", cmd, idx, sub);
-
+#endif
         if (cmd == SDO_UPLOAD_REQ) // --- READ ---
         {
-            if (idx == ENTITY_LIST_IDX)
-            {
-                if (sub == 0) // Number of entries in the entity list
-                {
-                    resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                    resp[4] = NUM_RELAYS; // Assuming NUM_RELAYS is the count of entities
-                }
-                else if (sub > 0 && sub <= NUM_RELAYS) // Entity Type ID
-                {
-                    resp[0] = SDO_UPLOAD_RESP_1_BYTE; // Returning 1-byte entity type ID
-                    resp[4] = 5; // Assuming '5' is the entity type ID for a light/switch
-                }
-                else
-                {
-                    can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                    return;
-                }
-                can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
-                return;
-            }
-
-            // Handle entity blocks (0x2100 to 0x2100 + NUM_RELAYS * ENTITY_BLOCK_SIZE)
-            if (idx >= ENTITY_BLOCK_BASE_IDX && idx < ENTITY_BLOCK_BASE_IDX + NUM_RELAYS * ENTITY_BLOCK_SIZE)
-            {
-                uint8_t entity_index = (idx - ENTITY_BLOCK_BASE_IDX) / ENTITY_BLOCK_SIZE;
-                uint8_t offset_in_block = (idx - ENTITY_BLOCK_BASE_IDX) % ENTITY_BLOCK_SIZE;
-
-                if (entity_index >= NUM_RELAYS)
-                {
-                    can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
-                    return;
-                }
-
-                switch (offset_in_block)
-                {
-                    case ENTITY_METADATA_OFFSET: // 0x21XX: Metadata (Name, Device Class, Object ID, Manufacturer)
-                        if (sub == 0) // Number of entries
-                        {
-                            resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                            resp[4] = 4; // Name, Device Class, Object ID, Manufacturer
-                        }
-                        else if (sub == 1) // Name
-                        {
-                            char name_buf[10];
-                            sprintf(name_buf, "Relay %d", entity_index + 1);
-                            size_t name_len = strlen(name_buf);
-                            size_t copy_len = (name_len > 4) ? 4 : name_len;
-                            resp[0] = SDO_UPLOAD_RESP_4_BYTES - (4 - copy_len); // Adjust command based on actual length
-                            memcpy(&resp[4], name_buf, copy_len);
-                        }
-                        else if (sub == 2) // Device Class (e.g., Light)
-                        {
-                            resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                            resp[4] = 5; // Light (0x05)
-                        }
-                        else if (sub == 3) // Object ID
-                        {
-                            char obj_id_buf[10];
-                            sprintf(obj_id_buf, "relay_%d", entity_index + 1);
-                            size_t obj_id_len = strlen(obj_id_buf);
-                            size_t copy_len = (obj_id_len > 4) ? 4 : obj_id_len;
-                            resp[0] = SDO_UPLOAD_RESP_4_BYTES - (4 - copy_len); // Adjust command based on actual length
-                            memcpy(&resp[4], obj_id_buf, copy_len);
-                        }
-                        else if (sub == 4) // Manufacturer
-                        {
-                            const char* manufacturer_name = "BluePill";
-                            size_t man_len = strlen(manufacturer_name);
-                            size_t copy_len = (man_len > 4) ? 4 : man_len;
-                            resp[0] = SDO_UPLOAD_RESP_4_BYTES - (4 - copy_len); // Adjust command based on actual length
-                            memcpy(&resp[4], manufacturer_name, copy_len);
-                        }
-                        else
-                        {
-                            can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                            return;
-                        }
-                        break;
-                    case ENTITY_STATE_OFFSET: // 0x21XX+1: Current state
-                        if (sub == 0) // Number of entries
-                        {
-                            resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                            resp[4] = 1;
-                        }
-                        else if (sub == 1) // State value
-                        {
-                            resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                            resp[4] = (relay_states >> entity_index) & 0x01;
-                        }
-                        else
-                        {
-                            can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                            return;
-                        }
-                        break;
-                    case ENTITY_COMMAND_OFFSET: // 0x21XX+2: Command (write-only)
-                        can_send_sdo_abort(idx, sub, 0x06010002); // Attempt to read a write-only object
-                        return;
-                    default:
-                        can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
-                        return;
-                }
-                can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
-                return;
-            }
-
-            // TPDO1 Communication Parameters (0x1800)
-            if (idx == OD_TPDO_COM_PARAM_BASE) 
-            {
-                if (sub == 0) { // Highest sub-index supported
-                    resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                    resp[4] = 2; // COB-ID and Transmission Type
-                } else if (sub == 1) { // COB-ID
-                    resp[0] = SDO_UPLOAD_RESP_4_BYTES;
-                    // Valid 11-bit ID, Event-triggered. COB-ID is 0x180 + node_id
-                    *((uint32_t *)&resp[4]) = COB_ID_PDO_TX + can_node_id;
-                } else if (sub == 2) { // Transmission type
-                    resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                    resp[4] = 254; // Event-driven on change
-                } else {
-                    can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                    return;
-                }
-                can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
-                return;
-            }
-
-            // RPDOs are not used for command, SDO is used instead.
-            // This section can be removed or left empty if needed for future use.
-            if (idx >= OD_RPDO_COM_PARAM_BASE && idx < OD_RPDO_COM_PARAM_BASE + NUM_RELAYS)
-            {
-                can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
-                return;
-            }
-
-            // TPDO1 Mapping Parameters (0x1A00)
-            if (idx == OD_TPDO_MAPPING_PARAM_BASE)
-            {
-                if (sub == 0) { // Number of mapped objects
-                    resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                    resp[4] = 1; // We map 1 object: the relay states bitmask
-                } else if (sub == 1) { // Mapping entry for the first (and only) object
-                    resp[0] = SDO_UPLOAD_RESP_4_BYTES;
-                    // Map OD_IDX_RELAY_BITMASK:00, 8 bits length
-                    uint32_t mapping = (OD_IDX_RELAY_BITMASK << 16) | (0 << 8) | 8;
-                    *((uint32_t *)&resp[4]) = mapping;
-                } else {
-                    can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                    return;
-                }
-                can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
-                return;
-            }
-
-            // TPDO Mapping for individual entities - REMOVED as we use a single bitmask TPDO
-            if (idx >= OD_TPDO_MAPPING_PARAM_BASE + 1 && idx < OD_TPDO_MAPPING_PARAM_BASE + NUM_RELAYS) {
-                can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
-                return;
-            }
-
             switch (idx)
             {
-            case OD_IDX_RELAY_BITMASK: // Relay states bitmask (Read-Only)
-                if (sub == 0) {
-                    resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                    resp[4] = relay_states;
-                } else {
-                    can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                    return;
-                }
-                break;
             case SDO_IDX_DEVICE_TYPE:
-                PRINTLN("SDO Dev Type (idx=0x%04X)", idx);
                 resp[0] = SDO_UPLOAD_RESP_4_BYTES;
-                *((uint32_t *)&resp[4]) = 0; // Generic device
+                *((uint32_t *)&resp[4]) = 0;
                 break;
+
             case SDO_IDX_DEVICE_NAME:
-                PRINTLN("SDO Dev Name (idx=0x%04X)", idx);
-                resp[0] = SDO_UPLOAD_RESP_4_BYTES;
-                strncpy((char *)&resp[4], "Relay", 4);
-                break;
-            case SDO_IDX_SW_VERSION:
-                PRINTLN("SDO SW Ver (idx=0x%04X)", idx);
-                const char* sw_version = "1.0";
-                size_t len_sw = strlen(sw_version);
-                size_t copy_len_sw = (len_sw > 4) ? 4 : len_sw;
-                // Adjust command based on actual length of string, up to 4 bytes for expedited transfer
-                resp[0] = SDO_UPLOAD_RESP_4_BYTES - (4 - copy_len_sw); 
-                memcpy(&resp[4], sw_version, copy_len_sw);
-                break;
-            case SDO_IDX_HARDWARE_VERSION:
-                PRINTLN("SDO HW Ver (idx=0x%04X)", idx);
-                const char* hw_version = "1.0";
-                size_t len_hw = strlen(hw_version);
-                size_t copy_len_hw = (len_hw > 4) ? 4 : len_hw;
-                resp[0] = SDO_UPLOAD_RESP_4_BYTES - (4 - copy_len_hw);
-                memcpy(&resp[4], hw_version, copy_len_hw);
-                break;
-            case SDO_IDX_ERROR_REGISTER:
-                PRINTLN("SDO Error Reg (idx=0x%04X)", idx);
-                resp[0] = SDO_UPLOAD_RESP_1_BYTE;
-                resp[4] = 0x00;
-                break;
+            {
+                static const char* device_name = "BluePill Relay Controller";
+                size_t name_len = strlen(device_name);
+                if (name_len <= 4) {
+                    resp[0] = 0x43 | ((4 - name_len) << 2);
+                    memcpy(&resp[4], device_name, name_len);
+                    can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
+                } else {
+                    sdo_start_segmented_upload(idx, sub, device_name);
+                }
+                return; // MUST return here
+            }
             case SDO_IDX_PRODUCER_HEARTBEAT_TIME:
-                PRINTLN("SDO Heartbeat Time (idx=0x%04X)", idx);
                 resp[0] = SDO_UPLOAD_RESP_2_BYTES;
                 *((uint16_t *)&resp[4]) = HEARTBEAT_TIME_MS;
-                break;
-            case SDO_IDX_IDENTITY_OBJECT:
-                // If node ID is 127 (unconfigured), pretend this object doesn't exist
-                // to prevent can2mqtt from trying to register it.
-                if (can_node_id == 127) {
-                    can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
-                    return;
-                }
+                break; // This break is OK
 
-                PRINTLN("SDO Ident Obj (idx=0x%04X, sub=%d) ", idx, sub);
+            case SDO_IDX_IDENTITY_OBJECT:
                 if (sub == 0) {
                     resp[0] = SDO_UPLOAD_RESP_1_BYTE;
                     resp[4] = 4;
@@ -344,83 +256,37 @@ void can_process_rx(uint32_t cob_id, const uint8_t *data, uint8_t len)
                         *((uint32_t *)&resp[4]) = CANOPEN_REVISION_NUMBER;
                     else if (sub == 4)
                         *((uint32_t *)&resp[4]) = CANOPEN_SERIAL_NUMBER;
-                    else
-                    {
+                    else {
                         can_send_sdo_abort(idx, sub, 0x06090011);
                         return;
                     }
                 }
-                break;
+                break; // This break is OK
+
             default:
                 PRINTLN("SDO Abort: unknown id=0x%04X", idx);
-                can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
+                can_send_sdo_abort(idx, sub, 0x06020000);
                 return;
             }
             can_tx(COB_ID_SDO_TX + can_node_id, resp, CAN_DATA_LENGTH);
         }
         else if (cmd == SDO_DOWNLOAD_EXP) // --- WRITE ---
         {
-            // Handle entity command writes
-            if (idx >= ENTITY_BLOCK_BASE_IDX && idx < ENTITY_BLOCK_BASE_IDX + NUM_RELAYS * ENTITY_BLOCK_SIZE)
-            {
-                uint8_t entity_index = (idx - ENTITY_BLOCK_BASE_IDX) / ENTITY_BLOCK_SIZE;
-                uint8_t offset_in_block = (idx - ENTITY_BLOCK_BASE_IDX) % ENTITY_BLOCK_SIZE;
-
-                if (entity_index >= NUM_RELAYS)
-                {
-                    can_send_sdo_abort(idx, sub, 0x06020000); // Object does not exist
-                    return;
-                }
-
-                if (offset_in_block == ENTITY_COMMAND_OFFSET) // 0x21XX+2: Command
-                {
-                    if (sub == 1) // State value
-                    {
-                        uint8_t new_state = data[4] & 0x01;
-                        if (new_state)
-                            relay_on(entity_index);
-                        else
-                            relay_off(entity_index);
-                        
-                        // Update local relay_states
-                        if (new_state)
-                            relay_states |= (1 << entity_index);
-                        else
-                            relay_states &= ~(1 << entity_index);
-
-                        resp[0] = SDO_DOWNLOAD_RESP;
-                        can_tx(COB_ID_SDO_TX + can_node_id, resp, 3);
-                        return;
-                    }
-                    else
-                    {
-                        can_send_sdo_abort(idx, sub, 0x06090011); // Sub-index does not exist
-                        return;
-                    }
-                }
-                else
-                {
-                    can_send_sdo_abort(idx, sub, 0x06010002); // Attempt to write a read-only object
-                    return;
-                }
-            }
-
             uint32_t abort_code = 0;
             switch (idx)
             {
-            case SDO_IDX_NODE_ID: // Custom writable object.
+            case SDO_IDX_NODE_ID:
                 if (sub == 0)
                 {
-                    PRINTLN("SDO Node ID (idx=0x%04X, data=0x%02X)", idx, data[4]);
                     can_adapter_set_node_id(data[4]);
                 }
                 else
                 {
                     abort_code = 0x06090011;
-                } // Sub-index error
+                }
                 break;
             default:
-                abort_code = 0x06010002; // Attempt to write a read-only object
+                abort_code = 0x06010002;
                 break;
             }
 

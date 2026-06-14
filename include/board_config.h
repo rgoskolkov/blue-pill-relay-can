@@ -41,6 +41,10 @@
 #define HEARTBEAT_TIME_MS 5000U
 #endif
 
+#ifndef ENABLE_USART_DEBUG
+#define ENABLE_USART_DEBUG 0
+#endif
+
 /* Relay pins (берутся напрямую из main.h) */
 #define RELAY1_PIN RELAY1_Pin
 #define RELAY1_PORT RELAY1_GPIO_Port
